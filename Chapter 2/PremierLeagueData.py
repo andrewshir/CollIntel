@@ -1,5 +1,6 @@
 import csv
 __author__ = 'Andrew'
+_file_path = "C:\\Users\\Andrew\\Source\\Repos\\CollIntel\\Chapter 2\\football\\%s.csv"
 
 
 class TeamData:
@@ -42,7 +43,7 @@ def get_data(start_year=1993, end_year=2014):
     empty = None
 
     for index, year in enumerate(range(start_year, end_year + 1)):
-        file = "C:\\Users\\Andrew\\Source\\Repos\\CollIntel\\Chapter 2\\football\\%s.csv" % year
+        file = _file_path % year
         teams = {}
 
         with open(file, "rb") as f:
@@ -69,3 +70,17 @@ def get_data(start_year=1993, end_year=2014):
                 allteams[team].append(empty)
 
     return allteams
+
+def get_teams_by_years(start_year=1993, end_year=2014):
+    result = {}
+    for index, year in enumerate(range(start_year, end_year + 1)):
+        file = _file_path % year
+        teams = {}
+        with open(file, "rb") as f:
+            reader = csv.reader(f)
+            # skip header
+            reader.next()
+            _count_score(teams, reader)
+            result[year] = teams.keys()
+    return result
+
