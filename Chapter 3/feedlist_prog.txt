@@ -1,0 +1,14 @@
+http://social.msdn.microsoft.com/Profile/u/activities/feed?displayName=Visual%20Studio%20Online%20Team
+http://social.msdn.microsoft.com/Profile/u/activities/feed?displayName=ieblog
+http://social.msdn.microsoft.com/Profile/u/activities/feed?displayName=VBTeam
+http://social.msdn.microsoft.com/Profile/u/activities/feed?displayName=Visio%20Team
+http://googleblog.blogspot.com/atom.xml
+http://googledevelopers.blogspot.com/atom.xml
+http://feeds.feedburner.com/GoogleAdsDeveloperBlog
+http://android-developers.blogspot.com/atom.xml
+http://googlepublicpolicy.blogspot.com/atom.xml
+http://googleresearch.blogspot.com/atom.xml
+http://googleforstudents.blogspot.com/atom.xml
+http://officialandroid.blogspot.com/atom.xml
+http://chrome.blogspot.com/atom.xml
+http://google-latlong.blogspot.com/atom.xml
