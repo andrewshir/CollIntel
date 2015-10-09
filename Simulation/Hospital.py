@@ -56,11 +56,11 @@ def build_hospital():
 
 def build_drg2sl():
     result = {}
-    result["DRG01"] = ["SL01"]
-    result["DRG02"] = ["SL02"]
-    result["DRG03"] = ["SL03"]
-    result["DRG04"] = ["SL04"]
-    result["DRG05"] = ["SL05"]
+    result["DRG01"] = "SL01"
+    result["DRG02"] = "SL02"
+    result["DRG03"] = "SL03"
+    result["DRG04"] = "SL04"
+    result["DRG05"] = "SL05"
     return result
 
 
@@ -84,8 +84,8 @@ def get_chambers_for_patient(hospital, patient):
         return []
 
     result = []
-    for  tup in depar:
-        result.append(tup[0].chambers)
+    for  tup in depars:
+        result.extend(tup[0].chambers)
     return result
 
 #*************************************************************
@@ -105,6 +105,7 @@ class HospitalAsResource(object):
     def __init__(self, env, hospital):
         self.env = env
         self.hospital = hospital
+        self.resource_items = []
         self.filter_resource = self._build_resource();
 
     def _build_resource(self):
@@ -118,12 +119,14 @@ class HospitalAsResource(object):
                         items.append(ResourceItem(chamber, place+1))
         resource = simpy.FilterStore(self.env)
         resource.items = items
+        self.resource_items = [it for it in items]
         return resource
 
     def request(self, patient):
         chambers = get_chambers_for_patient(self.hospital, patient)
         if len(chambers) == 0:
             print "Cannot assign a chamber to patient"
+            return None
 
         item_for_patient = None
         for chamber in chambers:
@@ -131,11 +134,9 @@ class HospitalAsResource(object):
                 if item.chamber != chamber:
                     continue
 
-                if not item.free() and item.place == 0:
-                    item_for_patient = None
-                    break
-
-                if not item.free() and item.place != 0 and patient.vip:
+                if not item.free() and (
+                    item.place == 0
+                    or item.place != 0 and patient.vip):
                     item_for_patient = None
                     break
 
@@ -151,36 +152,58 @@ class HospitalAsResource(object):
 
         if item_for_patient is None:
             print "Cannot assign a chamber to patient"
+            return None
 
         #seize chamber
-        print "Chamber %s seized" % item.chamber.code
         item_for_patient.patient = patient
+        print "[%s] Chamber %s seized with usage %d by %s" \
+              % (env.now, item_for_patient.chamber.code,
+                 item_for_patient.place,
+                 item_for_patient.patient.name)
         return self.filter_resource.get(lambda it: it == item_for_patient)
 
     def release(self, patient):
-        pass
+        for item in self.resource_items:
+            if item.patient == patient:
+                print "[%s] Chamber %s released with usage %d by %s" % \
+                      (env.now, item.chamber.code, item.place, item.patient.name)
+                item.patient = None
 
-def source(env):
+                return self.filter_resource.put(item)
+
+def source(env, hosp_ref):
     """Generates sequence of patients"""
-    number = random.randint(0, 2)
-    patients = []
-    for p in range(number):
-        drg = drg_list[random.randint(0, len(drg_list) - 1)]
-        sex = SexType.MALE if random.uniform(0, 1) > 0.51 else SexType.FEMALE
-        vip = False if random.uniform(0, 1) >= 0.05 else True
-        patients.append(Patient(env, drg, sex, vip))
+    patient_id = 1
+    while patient_id <= 10:
+        number = random.randint(0, 1)
+        patients = []
+        for p in range(number):
+            drg = drg_list[random.randint(0, len(drg_list) - 1)]
+            sex = SexType.MALE if random.uniform(0, 1) > 0.51 else SexType.FEMALE
+            vip = False if random.uniform(0, 1) >= 0.05 else True
+            patients.append(Patient(env, hosp_ref, str(patient_id), drg, sex, vip))
+            patient_id += 1
+        yield env.timeout(4)
 
 
 class Patient(object):
-    def __init__(self, env, drg, sex, vip = False):
+    def __init__(self, env, hospAsResource, name, drg, sex, vip = False):
+        self.name = name
+        self.hospAsResource = hospAsResource
         self.env = env
         self.drg = drg
         self.sex = sex
         self.vip = vip
+        print "New patient %s sex:%s drg:%s vip:%s" % (self.name, self.sex, self.drg, self.vip)
+        self.env.process(self.enter())
 
     def enter(self):
         """Patient enters hospital"""
-        pass
+        res = self.hospAsResource.request(self)
+        if res is not None:
+            yield res
+            yield env.timeout(168)
+            yield self.hospAsResource.release(self)
 
 """ Simple hospital simulation
 Hospital consists of two departments each of 5 chambers
@@ -194,3 +217,9 @@ Assumptions:
 
 print "Hospital simulation"
 env = simpy.Environment()
+
+hospital = build_hospital()
+hosp_res = HospitalAsResource(env, hospital)
+
+env.process(source(env, hosp_res))
+env.run()
