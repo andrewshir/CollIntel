@@ -77,9 +77,9 @@ for day, dic_year in freq.items():
     visit_counts.append(v)
     #print day, v, dic_year.values()
 
-# plt.hist(visit_counts, 7)
-# plt.ylabel("# visits")
-# plt.show()
+plt.hist(visit_counts, 7)
+plt.ylabel("# visits")
+plt.show()
 
 zpoints = [216, 238]
 
@@ -90,7 +90,7 @@ obs_freq.append(len([x for x in visit_counts if x > 238]))
 print "observations freq", obs_freq
 
 nobs, (min, max), mean, variance, s, k = stats.describe(visit_counts)
-variance = 350 # we will not use computed value
+#variance = 350
 std = math.sqrt(variance)
 print "Nobs", nobs
 print "Mean", mean
@@ -109,6 +109,21 @@ chisq, p = stats.chisquare(obs_freq, exp_freq)
 print "p", p
 print "chisq", chisq
 
+# compare real and artificial data
+real_data = []
+for daykey in dic.keys():
+    datetime = time.strptime(daykey, time_format)
+
+    if filter(datetime):
+        real_data.append(dic[daykey])
+real_data.sort()
+
+rand_data = stats.norm.rvs(mean, std, len(real_data))
+rand_data.sort()
+
+x_values = xrange(len(real_data))
+plt.plot(x_values, real_data, 'ro', x_values, rand_data, 'bs')
+plt.show()
 
 
 
