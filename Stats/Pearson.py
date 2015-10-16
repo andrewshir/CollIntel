@@ -24,14 +24,20 @@ print "Standard deviation", std
 expected_prob = [ stats.norm.cdf(observed_values[i]+1, mean, std) - stats.norm.cdf(observed_values[i]-1, mean, std)
                   for i in range(len(observed_values))]
 expected_prob = np.array(expected_prob)
-expected_freqs = expected_prob * nobs
+expected_freqs = np.array([int(round(x * nobs)) for x in expected_prob])
+
 #expected_freqs = [ x * nobs for x in expected_prob ]
 #expected_freqs = np.array(expected_freqs)
 
 #print expected_prob
-print expected_freqs
-print observed_freqs
+print "Expected", expected_freqs
+print "Observed", observed_freqs
 
+print "Run Pearson test:"
 chisq, p = stats.chisquare(observed_freqs, expected_freqs, 1)
 print "p", p
-print "chisq", chisq
+print "chisq statistics", chisq
+
+chi2val = stats.chi2.ppf(0.95, len(observed_values) - 2)
+print "chi2 border value", chi2val
+print "H0 is accepted" if chisq < chi2val else "H0 is rejected "

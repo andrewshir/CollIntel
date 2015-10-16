@@ -81,16 +81,16 @@ plt.hist(visit_counts, 7)
 plt.ylabel("# visits")
 plt.show()
 
-zpoints = [216, 238]
+zpoints = [216, 238, 261]
 
 obs_freq = []
 obs_freq.append(len([x for x in visit_counts if x <=216]))
 obs_freq.append(len([x for x in visit_counts if x > 216 and x <= 238]))
-obs_freq.append(len([x for x in visit_counts if x > 238]))
+obs_freq.append(len([x for x in visit_counts if x > 238 and x <= 261]))
+obs_freq.append(len([x for x in visit_counts if x > 261]))
 print "observations freq", obs_freq
 
 nobs, (min, max), mean, variance, s, k = stats.describe(visit_counts)
-#variance = 350
 std = math.sqrt(variance)
 print "Nobs", nobs
 print "Mean", mean
@@ -99,15 +99,20 @@ print "Variance", variance
 exp_prob = []
 exp_prob.append(stats.norm.cdf(216, mean, std))
 exp_prob.append(stats.norm.cdf(238, mean, std) - stats.norm.cdf(216, mean, std))
-exp_prob.append(1 - stats.norm.cdf(238, mean, std))
+exp_prob.append(stats.norm.cdf(261, mean, std) - stats.norm.cdf(238, mean, std))
+exp_prob.append(1 - stats.norm.cdf(261, mean, std))
 print "expected prob", exp_prob
 
 exp_freq = [round(x * nobs) for x in exp_prob]
 print "expected freq", exp_freq
-
-chisq, p = stats.chisquare(obs_freq, exp_freq)
+print "Run Pearson test"
+chisq, p = stats.chisquare(obs_freq, exp_freq, 1)
 print "p", p
 print "chisq", chisq
+
+chi2val = stats.chi2.ppf(0.95, len(obs_freq) - 2)
+print "chi2 border value", chi2val
+print "H0 is accepted" if chisq < chi2val else "H0 is rejected "
 
 # compare real and artificial data
 real_data = []
