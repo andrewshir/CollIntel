@@ -51,4 +51,5 @@ rand_data.sort()
 
 x_values = xrange(len(obs_data))
 plt.plot(x_values, obs_data, 'ro', x_values, rand_data, 'bs')
+plt.ylabel("# visits per day")
 plt.show()

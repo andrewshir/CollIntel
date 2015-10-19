@@ -50,5 +50,6 @@ rand_data = stats.norm.rvs(mean, std, len(obs_data))
 rand_data.sort()
 
 x_values = xrange(len(obs_data))
+plt.ylabel("# visits per day")
 plt.plot(x_values, obs_data, 'ro', x_values, rand_data, 'bs')
 plt.show()

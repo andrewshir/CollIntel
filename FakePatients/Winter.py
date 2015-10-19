@@ -15,7 +15,7 @@ print
 
 s1, s2, s3, s4 = fp.get_season_data(workdays)
 
-fp.plot_seasons_data(s1, s2, s3, s4)
+#fp.plot_seasons_data(s1, s2, s3, s4)
 alldata = s1
 data = [x for x in alldata if x > low_filter]
 obs_freq = fp.calculate_data_freq(zpoints, data)
@@ -50,5 +50,6 @@ rand_data = stats.norm.rvs(mean, std, len(obs_data))
 rand_data.sort()
 
 x_values = xrange(len(obs_data))
+plt.ylabel("# visits per day")
 plt.plot(x_values, obs_data, 'ro', x_values, rand_data, 'bs')
 plt.show()

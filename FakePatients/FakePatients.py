@@ -66,8 +66,14 @@ def get_season_data(dic_freq_by_days):
     return seasons_data
 
 
+def plot_data(data, bins=5):
+    plt.hist(data, bins)
+    plt.xlabel("# visits")
+    plt.show()
+
+
 def plot_seasons_data(s1, s2, s3, s4):
-    plt.hist(s1, 10)
+    plt.hist(s1, 7)
     plt.title("Winter")
     plt.xlabel("# visits")
     plt.show()
