@@ -1,9 +1,11 @@
 __author__ = 'Andrew'
-import FakePatients
+import FakePatients as fp
 import time
 import matplotlib.pyplot as plt
+import scipy.stats as stats
+import math
 
-data = FakePatients.load_data_with_sline()
+all_data = fp.load_data_with_sline()
 # Here are sline which are presented almost every day (at least 360 days in year )
 fit_sline = ['276', '070', '090', '390', '274', '135', '129', '250', '050', '255', '280', '283', '145', '065', '085'
              , '245', '262', '267', '125', '387', '165', '132', '296']
@@ -40,7 +42,7 @@ def show_sline_freq(year=YEAR):
 def sline_year_fitness():
     """Prints number of y-days with patient admittance for a sline"""
     fitness = {}
-    for tuple in data:
+    for tuple in all_data:
         admit_date = tuple[2]
         sline = tuple[14]
         if sline is None:
@@ -51,7 +53,7 @@ def sline_year_fitness():
             continue
 
         datetime = time.strptime(admit_date, "%Y-%m-%d")
-        if int(datetime.tm_year)<= FakePatients.remove_data_before_year:
+        if int(datetime.tm_year)<= fp.remove_data_before_year:
             continue
 
         # if int(datetime.tm_year) != YEAR:
@@ -65,10 +67,10 @@ def sline_year_fitness():
         print sline, len(ydays), "!!" if len(ydays) < 360 else ""
 
 
-def sline(sline_code, bins=7):
-    """Plots day freqs for a given sline"""
+def get_sline_data(sline_code):
+    """Return sline average year data"""
     freq = {}
-    for tuple in data:
+    for tuple in all_data:
         admit_date = tuple[2]
         sline = tuple[14]
         if sline is None:
@@ -82,27 +84,39 @@ def sline(sline_code, bins=7):
             continue
 
         datetime = time.strptime(admit_date, "%Y-%m-%d")
-        # if int(datetime.tm_year) != YEAR:
+
+        # if datetime.tm_year != 2014:
         #     continue
 
-        if int(datetime.tm_year)<= FakePatients.remove_data_before_year:
-            continue
+        freq.setdefault(datetime.tm_year, {})
+        freq[datetime.tm_year].setdefault(datetime.tm_yday, 0)
+        freq[datetime.tm_year][datetime.tm_yday] += 1
 
-        freq.setdefault(admit_date, {})
-        freq[admit_date].setdefault(datetime.tm_year, 0)
-        freq[admit_date][datetime.tm_year] += 1
+    # count #visits freqs for different years
+    vfreq = {}
+    for year, days in freq.items():
+        for v in days.values():
+            vfreq.setdefault(v, {})
+            vfreq[v].setdefault(year, 0)
+            vfreq[v][year] += 1
 
-    keys = freq.keys()
-    keys.sort()
+    result_dict = {}
+    for v, years in vfreq.items():
+        result_dict[v] = int(round(sum(years.values())/float(len(years))))
+        #print v, result_dict[v]
 
-    values = []
+    result = []
+    for key, value in result_dict.items():
+        result.extend([key for x in xrange(value)])
+    return result
 
-    for daykey in keys:
-        #print daykey, freq[daykey]
-        value = sum(freq[daykey].values())/len(freq[daykey])
-        values.append(value)
 
-    plt.title("Freq for sline %s in %d" %(sline_code, YEAR))
+def hist_sline(sline_code, bins, values=None):
+    """Build hist for day freqs for a given sline"""
+    if values is None:
+        values = get_sline_data(sline_code)
+
+    plt.title("Freq for sline %s" %(sline_code))
     plt.hist(values,bins)
     plt.ylabel('visit freq')
     plt.xlabel('# visits per day')
@@ -112,15 +126,92 @@ def sline(sline_code, bins=7):
 class SlineDstr(object):
     """Describes sline patient count distribution"""
 
-    def __init__(self, code, rvs=None, prob=0.0):
+    def __init__(self, code, cdf=None, prob=0.0):
         # sline code
         self.code = code
         # function to get number of patient with this sline per day
-        self.rvs = rvs
+        self.cdf = cdf
         # probability of admittance of patient with this sline
         self.prob = prob
 
 
-sline('276')
+def add_zeros(data):
+    zero_count = 365 - len(data)
+    if zero_count<0: zero_count = 0
+    result=[]
+    result.extend([0 for x in xrange(zero_count)])
+    result.extend(data)
+    return result
+
+
+def analyze_hist(sline_code, data, bins=7):
+    print "Analysis sline %s" % sline_code
+    nobs, (min, max), mean, variance, s, k = stats.describe(data)
+    std = math.sqrt(variance)
+    print "Nobs", nobs
+    print "Mean", mean
+    print "Variance", variance
+    print "StD", std
+
+    hist_sline(sline_code, bins, data)
+
+def analyze_plot(sline_code, data):
+    print "Analysis sline %s" % sline_code
+    nobs, (min, max), mean, variance, s, k = stats.describe(data)
+    std = math.sqrt(variance)
+    print "Nobs", nobs
+    print "Mean", mean
+    print "Variance", variance
+    print "StD", std
+
+    freq = {}
+    for x in data:
+        freq.setdefault(x, 0)
+        freq[x] += 1
+
+    plt.title("Analysis sline %s" % sline_code)
+    plt.ylabel("#visits")
+    plt.xlabel("number of patients per day")
+    plt.plot(freq.keys(),freq.values())
+    plt.show()
+
+
+def test(zpoints, data, cdf, rvs, ddof = 1):
+    obs_freq = fp.calculate_data_freq(zpoints, data)
+    exp_prob = fp.calculate_exp_prob(zpoints, cdf)
+    exp_freq = fp.convert_prob_2_freq(exp_prob, len(data))
+    print "Observations freq", obs_freq
+    print "Expected freq", exp_freq
+    print "Run Pearson test"
+    chisq, p = stats.chisquare(obs_freq, exp_freq, ddof)
+    print "p", p
+    print "chisq", chisq
+    chi2val = stats.chi2.ppf(0.95, len(obs_freq) - 1 - ddof)
+    print "chi2 border value", chi2val
+    print "H0 is accepted" if chisq < chi2val else "H0 is rejected "
+
+    obs_data = data
+    obs_data.sort()
+    rand_data = rvs(len(obs_data))
+    rand_data.sort()
+
+    x_values = xrange(len(obs_data))
+    plt.ylabel("# visits per day")
+    plt.plot(x_values, obs_data, 'ro', x_values, rand_data, '-')
+    plt.show()
+
+
+# for sline_code in fit_sline:
+sline_code = '070'
+data = get_sline_data(sline_code)
+# data = add_zeros(data)
+# print len(data)
+# print data
+# analyze_plot(sline_code, data)
+# analyze_hist(sline_code, data)
+# test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.3), lambda count: stats.poisson.rvs(mu=2.3, size=count))
+test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
+
+# hist_sline('276')
 # sline_year_fitness()
 # show_sline_freq()
