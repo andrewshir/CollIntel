@@ -35,6 +35,60 @@ def load_data(data_file = "FakePatients.csv"):
                 workdays[admit_date] += 1
     return workdays, holidays
 
+
+def load_mapping(mapping_file="Mapping.csv"):
+    file = working_path + mapping_file
+    print "Load mappping from %s" % file
+
+    with open(file, "rb") as f:
+        reader = csv.reader(f, delimiter=',', quotechar='"')
+
+        # skip the header
+        reader.next()
+
+        result = {}
+        for row in reader:
+            service_line = row[0]
+            drg = row[2]
+
+            if drg in result:
+                raise RuntimeError("Duplicate DRG in mapping")
+            result[drg] = service_line
+        return result
+
+def load_data_with_sline(data_file = "FakePatients.csv"):
+    mapping = load_mapping()
+    file = working_path + data_file
+    print "Load DRG data from %s" % file
+
+    data = []
+
+    with open(file, "rb") as f:
+        reader = csv.reader(f)
+
+        for row in reader:
+            period = row[0]
+            visit = row[1]
+            admit = row[2]
+            dis = row[3]
+            blos = row[4]
+            rlos = row[5]
+            stay = row[6]
+            drg = row[7]
+            soi = row[8]
+            age = row[9]
+            sex = row[10]
+            isdied = row[11]
+            ddx_total = row[12]
+            proc_total = row[13]
+            sline = None
+
+            if drg in mapping:
+                sline = mapping[drg]
+
+            data.append((period, visit, admit, dis, blos, rlos, stay, drg, soi, age, sex, isdied, ddx_total, proc_total, sline))
+    return data
+
 def get_season_data(dic_freq_by_days):
     seasons = [{}, {}, {}, {}]
 
