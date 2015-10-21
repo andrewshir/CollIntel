@@ -15,7 +15,7 @@ YEAR = 2012
 def show_sline_freq(year=YEAR):
     """Prints sline counts for a year"""
     sline_freq = {}
-    for tuple in data:
+    for tuple in all_data:
         sline = tuple[14]
         if sline is None:
             continue
@@ -126,11 +126,13 @@ def hist_sline(sline_code, bins, values=None):
 class SlineDstr(object):
     """Describes sline patient count distribution"""
 
-    def __init__(self, code, cdf=None, prob=0.0):
+    def __init__(self, code, zvalues=[], rvs=None, prob=0.0):
         # sline code
         self.code = code
+        # z values
+        self.zvalues = zvalues
         # function to get number of patient with this sline per day
-        self.cdf = cdf
+        self.rvs = rvs
         # probability of admittance of patient with this sline
         self.prob = prob
 
@@ -193,6 +195,7 @@ def test(zpoints, data, cdf, rvs, ddof = 1):
     obs_data = data
     obs_data.sort()
     rand_data = rvs(len(obs_data))
+    rand_data = [x if x > 1 else 1 for x in rand_data]
     rand_data.sort()
 
     x_values = xrange(len(obs_data))
@@ -202,16 +205,24 @@ def test(zpoints, data, cdf, rvs, ddof = 1):
 
 
 # for sline_code in fit_sline:
-sline_code = '070'
+sline_code = '283'
 data = get_sline_data(sline_code)
 # data = add_zeros(data)
 # print len(data)
 # print data
 # analyze_plot(sline_code, data)
 # analyze_hist(sline_code, data)
-# test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.3), lambda count: stats.poisson.rvs(mu=2.3, size=count))
-test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
-
-# hist_sline('276')
-# sline_year_fitness()
+# test([2,3], data, lambda x: stats.poisson.cdf(x, mu=2.65), lambda count: stats.poisson.rvs(mu=2.65, size=count), 0)
+# test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
 # show_sline_freq()
+
+sline_dstr = [
+    SlineDstr('070', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.6, size=count))
+    ,SlineDstr('090', [2,3,4], lambda count: stats.poisson.rvs(mu=2.19, size=count))
+    ,SlineDstr('050', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.19, size=count))
+    ,SlineDstr('165', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
+    ,SlineDstr('250', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
+    ,SlineDstr('280', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.21, size=count))
+    ,SlineDstr('387', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.9, size=count))
+    ,SlineDstr('145', [2,4], lambda count: stats.poisson.rvs(mu=2.81, size=count))
+    ]
