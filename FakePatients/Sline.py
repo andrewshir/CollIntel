@@ -10,7 +10,7 @@ all_data = fp.load_data_with_sline()
 fit_sline = ['276', '070', '090', '390', '274', '135', '129', '250', '050', '255', '280', '283', '145', '065', '085'
              , '245', '262', '267', '125', '387', '165', '132', '296']
 YEAR = 2012
-
+FULL_YEARS = [2011, 2012, 2013]
 
 def show_sline_freq(year=YEAR):
     """Prints sline counts for a year"""
@@ -31,7 +31,7 @@ def show_sline_freq(year=YEAR):
         sline_freq.setdefault(sline, 0)
         sline_freq[sline] += 1
 
-    print "Sline freq for 2012 year"
+    print "Sline freq for %s year" % year
     print "Sline total:", len(sline_freq)
     print "Sline count"
 
@@ -85,7 +85,7 @@ def get_sline_data(sline_code):
 
         datetime = time.strptime(admit_date, "%Y-%m-%d")
 
-        # if datetime.tm_year != 2014:
+        # if datetime.tm_year not in (2011, 2012, 2013):
         #     continue
 
         freq.setdefault(datetime.tm_year, {})
@@ -103,7 +103,7 @@ def get_sline_data(sline_code):
     result_dict = {}
     for v, years in vfreq.items():
         result_dict[v] = int(round(sum(years.values())/float(len(years))))
-        #print v, result_dict[v]
+        # print v, result_dict[v], years.values()
 
     result = []
     for key, value in result_dict.items():
@@ -205,14 +205,14 @@ def test(zpoints, data, cdf, rvs, ddof = 1):
 
 
 # for sline_code in fit_sline:
-sline_code = '283'
+sline_code = '070'
 data = get_sline_data(sline_code)
 # data = add_zeros(data)
 # print len(data)
 # print data
 # analyze_plot(sline_code, data)
 # analyze_hist(sline_code, data)
-# test([2,3], data, lambda x: stats.poisson.cdf(x, mu=2.65), lambda count: stats.poisson.rvs(mu=2.65, size=count), 0)
+test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count), 0)
 # test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
 # show_sline_freq()
 

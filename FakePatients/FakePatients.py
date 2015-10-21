@@ -57,6 +57,8 @@ def load_mapping(mapping_file="Mapping.csv"):
         return result
 
 def load_data_with_sline(data_file = "FakePatients.csv"):
+    """Loads data as list of tuples, adde sline at the end"""
+
     mapping = load_mapping()
     file = working_path + data_file
     print "Load DRG data from %s" % file
@@ -65,6 +67,9 @@ def load_data_with_sline(data_file = "FakePatients.csv"):
 
     with open(file, "rb") as f:
         reader = csv.reader(f)
+
+        # skip header
+        reader.next()
 
         for row in reader:
             period = row[0]
