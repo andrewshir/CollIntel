@@ -3,53 +3,10 @@ import FakePatients as fp
 import numpy as np
 import time
 import scipy.stats as stats
+from FakePatients import split_age
+from FakePatients import show_empty_combinations
 
 all_data = fp.load_data_with_sline()
-
-
-def get_empty_combinations():
-    """Allows estimate data presence for different categories"""
-    sex_list = [2, 3]
-    age_list = [2, 3, 4, 5]
-    sline_list = ['040', '045', '050', '055', '065', '070', '085', '090', '095', '125', '129', '132', '133', '135', '137', '145', '165', '170', '245', '250', '252', '255', '262', '267', '271', '272', '274', '276', '280', '283', '293', '294', '296', '325', '330', '370', '385', '387', '390']
-
-    result = []
-    data = {}
-    for s in sex_list:
-        data[s] = {}
-        for a in age_list:
-            data[s][a] = {}
-            for sl in sline_list:
-                data[s][a][sl] = 0
-
-    for tup in all_data:
-        age = split_age(int(tup[9]))
-        sex = int(tup[10])
-        admit_date = tup[2]
-        sline = tup[14]
-
-        if sline is None:
-            continue
-        if len(admit_date) == 0:
-            continue
-
-        data[sex][age][sline] += 1
-
-    for s in sex_list:
-        for a in age_list:
-            for sl in sline_list:
-                if data[s][a][sl] == 0:
-                    result.append((s,a,sl))
-                    continue
-
-    return result
-
-
-def show_empty_combinations():
-    list = get_empty_combinations()
-    for (s,a,sl) in list:
-        print "Sex %d, age %d, sline %s has no data" % (s, a, sl)
-    print "Total:", len(list)
 
 
 def show_values():
@@ -90,17 +47,6 @@ def show_values():
             continue
         print"'" + key + "',",
     print
-
-
-def split_age(age):
-    if age <= 35:
-        return 2
-    elif 35 < age <= 50:
-        return 3
-    elif 50 < age <=70:
-        return 4
-    else:
-        return 5
 
 
 def show_contingency_table(contingency_table):
@@ -231,6 +177,7 @@ def test_test():
     print "dof", dof
 
 # show_values()
+# show_empty_combinations()
 show_empty_combinations()
 
 """

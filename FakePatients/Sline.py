@@ -4,6 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import math
+from FakePatients import split_age
 
 all_data = fp.load_data_with_sline()
 # Here are sline which are presented almost every day (at least 360 days in year )
@@ -67,7 +68,7 @@ def sline_year_fitness():
         print sline, len(ydays), "!!" if len(ydays) < 360 else ""
 
 
-def get_sline_data(sline_code):
+def get_avg_sline_data(sline_code, all_data):
     """Return sline average year data"""
     freq = {}
     for tuple in all_data:
@@ -111,10 +112,33 @@ def get_sline_data(sline_code):
     return result
 
 
+def get_latest_sline_data(sline_code, all_data, n=30):
+    """Returns latest sline data"""
+    data = {}
+    for tup in all_data:
+        admit_date = tup[2]
+        sline = tup[14]
+
+        if sline != sline_code:
+            continue
+        if len(admit_date) == 0:
+            continue
+        data.setdefault(admit_date, 0)
+        data[admit_date] += 1
+    keys = sorted(data.keys())
+    if len(keys) > n:
+        keys = keys[-n:]
+
+    result=[]
+    for key in keys:
+        result.append(data[key])
+    return result
+
+
 def hist_sline(sline_code, bins, values=None):
     """Build hist for day freqs for a given sline"""
     if values is None:
-        values = get_sline_data(sline_code)
+        values = get_avg_sline_data(sline_code)
 
     plt.title("Freq for sline %s" %(sline_code))
     plt.hist(values,bins)
@@ -123,26 +147,30 @@ def hist_sline(sline_code, bins, values=None):
     plt.show()
 
 
-class SlineDstr(object):
-    """Describes sline patient count distribution"""
-
-    def __init__(self, code, zvalues=[], rvs=None, prob=0.0):
-        # sline code
-        self.code = code
-        # z values
-        self.zvalues = zvalues
-        # function to get number of patient with this sline per day
-        self.rvs = rvs
-        # probability of admittance of patient with this sline
-        self.prob = prob
-
-
 def add_zeros(data):
     zero_count = 365 - len(data)
     if zero_count<0: zero_count = 0
     result=[]
     result.extend([0 for x in xrange(zero_count)])
     result.extend(data)
+    return result
+
+
+def filter_data(data, (sexf, agef, slinef)):
+    result = []
+    for tup in data:
+        age = split_age(int(tup[9]))
+        sex = int(tup[10])
+        admit_date = tup[2]
+        sline = tup[14]
+
+        if sline is None:
+            continue
+        if len(admit_date) == 0:
+            continue
+
+        if age == agef and sex == sexf and sline == slinef:
+            result.append(tup)
     return result
 
 
@@ -204,25 +232,53 @@ def test(zpoints, data, cdf, rvs, ddof = 1):
     plt.show()
 
 
+def predict(sline_dstr):
+    # sline_dstr.code
+    # sline_dstr.rvs(30)
+
+    historical_data = []
+
+#
+# sline_dstr = [
+#     SlineDstr('070', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.6, size=count))
+#     ,SlineDstr('090', [2,3,4], lambda count: stats.poisson.rvs(mu=2.19, size=count))
+#     ,SlineDstr('050', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.19, size=count))
+#     ,SlineDstr('165', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
+#     ,SlineDstr('250', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
+#     ,SlineDstr('280', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.21, size=count))
+#     ,SlineDstr('387', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.9, size=count))
+#     ,SlineDstr('145', [2,4], lambda count: stats.poisson.rvs(mu=2.81, size=count))
+#     ]
+
+selected = [
+    # Cardiology 35-50
+    (2, 3, '050')
+    # Cardiology 50-70
+    ,(2, 4, '050')
+    # Cardiology 50-70
+    ,(3, 4, '050')
+    # Urological Surgery 50-70
+    ,(2, 4, '387')
+    # Urological Surgery 50-70
+    ,(3, 4, '387')
+]
+
 # for sline_code in fit_sline:
-sline_code = '070'
-data = get_sline_data(sline_code)
-# data = add_zeros(data)
+sline_code = '050'
+data = filter_data(all_data, (2, 3, sline_code))
+data = get_latest_sline_data(sline_code, data)
+print data
+f = lambda count: stats.poisson.rvs(mu=1.17, size=count)
+print f(30)
+# data = get_avg_sline_data(sline_code, data)
 # print len(data)
 # print data
 # analyze_plot(sline_code, data)
 # analyze_hist(sline_code, data)
-test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count), 0)
+# test([2,3], data, lambda x: stats.poisson.cdf(x, mu=1.17), lambda count: stats.poisson.rvs(mu=1.17, size=count), 0)
 # test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
 # show_sline_freq()
 
-sline_dstr = [
-    SlineDstr('070', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.6, size=count))
-    ,SlineDstr('090', [2,3,4], lambda count: stats.poisson.rvs(mu=2.19, size=count))
-    ,SlineDstr('050', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.19, size=count))
-    ,SlineDstr('165', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
-    ,SlineDstr('250', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.0, size=count))
-    ,SlineDstr('280', [2,3,4,5], lambda count: stats.poisson.rvs(mu=2.21, size=count))
-    ,SlineDstr('387', [3,4,5,6], lambda count: stats.poisson.rvs(mu=2.9, size=count))
-    ,SlineDstr('145', [2,4], lambda count: stats.poisson.rvs(mu=2.81, size=count))
-    ]
+# predict(SlineDstr('050', [], lambda count: stats.poisson.rvs(mu=1.17, size=count)))
+
+
