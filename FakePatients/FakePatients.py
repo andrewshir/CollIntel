@@ -2,6 +2,7 @@ __author__ = 'Andrew'
 import csv
 import matplotlib.pyplot as plt
 import time
+import datetime
 
 import numpy as np
 
@@ -195,9 +196,7 @@ def get_empty_combinations(all_data=None):
     if all_data is None:
         all_data = load_data_with_sline()
 
-    sex_list = [2, 3]
-    age_list = [2, 3, 4, 5]
-    sline_list = ['040', '045', '050', '055', '065', '070', '085', '090', '095', '125', '129', '132', '133', '135', '137', '145', '165', '170', '245', '250', '252', '255', '262', '267', '271', '272', '274', '276', '280', '283', '293', '294', '296', '325', '330', '370', '385', '387', '390']
+    sex_list, age_list, sline_list = get_value_sets()
 
     result = []
     data = {}
@@ -237,8 +236,60 @@ def show_empty_combinations(all_data=None):
         print "Sex %d, age %d, sline %s has no data" % (s, a, sl)
     print "Total:", len(list)
 
+def parse_struct_time(str_date):
+    return time.strptime(str_date, time_format)
+
+def parse_datetime(str_date):
+    dt = time.strptime(str_date, time_format)
+    return datetime.datetime(dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec)
 
 
+def get_value_sets():
+    return [2, 3], [2, 3, 4, 5], ['040', '045', '050', '055', '065', '070', '085', '090', '095', '125', '129', '132', '133', '135', '137', '145', '165', '170', '245', '250', '252', '255', '262', '267', '271', '272', '274', '276', '280', '283', '293', '294', '296', '325', '330', '370', '385', '387', '390']
+
+
+def get_patients_freq(all_data=None):
+    """Returns probabilities of admittance of a patient with some (sex, age, sline)"""
+    if all_data is None:
+        all_data = load_data_with_sline()
+
+    sex_list, age_list, sline_list = get_value_sets()
+
+
+    data = {}
+    for s in sex_list:
+        data[s] = {}
+        for a in age_list:
+            data[s][a] = {}
+            for sl in sline_list:
+                data[s][a][sl] = {}
+
+    start_date = None
+    end_date = None
+    for tup in all_data:
+        age = split_age(int(tup[9]))
+        sex = int(tup[10])
+        admit_date = tup[2]
+        sline = tup[14]
+
+        if sline is None:
+            continue
+        if len(admit_date) == 0:
+            continue
+        datetime = parse_datetime(admit_date)
+        start_date = datetime if start_date is None or datetime < start_date else start_date
+        end_date = datetime if end_date is None or datetime > end_date else end_date
+        data[sex][age][sline][admit_date] = 1
+
+    days_count = (end_date - start_date).days
+
+    result = {}
+    for s in sex_list:
+        for a in age_list:
+            for sl in sline_list:
+                result[(s, a, sl)] = len(data[s][a][sl]) / float(days_count)
+
+    return result
 
 
 
