@@ -264,18 +264,14 @@ selected = [
 ]
 
 # for sline_code in fit_sline:
-sline_code = '050'
-data = filter_data(all_data, (2, 3, sline_code))
-data = get_latest_sline_data(sline_code, data)
-print data
-f = lambda count: stats.poisson.rvs(mu=1.17, size=count)
-print f(30)
-# data = get_avg_sline_data(sline_code, data)
+sline_code = '387'
+data = filter_data(all_data, (2, 4, sline_code))
+data = get_avg_sline_data(sline_code, data)
 # print len(data)
 # print data
 # analyze_plot(sline_code, data)
 # analyze_hist(sline_code, data)
-# test([2,3], data, lambda x: stats.poisson.cdf(x, mu=1.17), lambda count: stats.poisson.rvs(mu=1.17, size=count), 0)
+# test([2,3], data, lambda x: stats.poisson.cdf(x, mu=1.44), lambda count: stats.poisson.rvs(mu=1.3, size=count), 0)
 # test([2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.6), lambda count: stats.poisson.rvs(mu=2.6, size=count))
 # show_sline_freq()
 
