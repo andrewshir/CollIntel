@@ -68,6 +68,21 @@ def get_month(admit_date):
     datetime = time.strptime(admit_date, "%Y-%m-%d")
     return datetime.tm_mon
 
+def get_los_category(rlos):
+    if rlos < 5:
+        return 0
+    elif 5<= rlos < 10:
+        return 1
+    elif 10<= rlos < 15:
+        return 2
+    elif 15<= rlos < 20:
+        return 3
+    elif 20<= rlos < 25:
+        return 4
+    elif 25<= rlos:
+        return 5
+    return None
+
 
 def test_sex():
     contingency_table = {}
@@ -168,6 +183,57 @@ def test_sex_month():
 
     show_contingency_table(contingency_table)
 
+def test_rlos_age():
+    contingency_table = {}
+    for tup in all_data:
+        admit_date = tup[2]
+        rlos = tup[5]
+        age = split_age(int(tup[9]))
+
+        if len(admit_date) == 0:
+            continue
+        if len(rlos) == 0:
+            continue
+
+        contingency_table.setdefault(age, dict([(x, 0) for x in xrange(6)]))
+        contingency_table[age][get_los_category(int(rlos))] += 1
+
+    show_contingency_table(contingency_table)
+
+def test_rlos_sex():
+    contingency_table = {}
+    for tup in all_data:
+        admit_date = tup[2]
+        rlos = tup[5]
+        sex = int(tup[10])
+
+        if len(admit_date) == 0:
+            continue
+        if len(rlos) == 0:
+            continue
+
+        contingency_table.setdefault(sex, dict([(x, 0) for x in xrange(6)]))
+        contingency_table[sex][get_los_category(int(rlos))] += 1
+
+    show_contingency_table(contingency_table)
+
+def test_rlos_month():
+    contingency_table = {}
+    for tup in all_data:
+        admit_date = tup[2]
+        rlos = tup[5]
+
+        if len(admit_date) == 0:
+            continue
+        if len(rlos) == 0:
+            continue
+
+        month = get_month(admit_date)
+
+        contingency_table.setdefault(month, dict([(x, 0) for x in xrange(6)]))
+        contingency_table[month][get_los_category(int(rlos))] += 1
+
+    show_contingency_table(contingency_table)
 
 def test_test():
     table = [[62, 88, 117], [1, 2, 3]]
@@ -178,7 +244,10 @@ def test_test():
 
 # show_values()
 # show_empty_combinations()
-show_empty_combinations()
+# show_empty_combinations()
+# test_rlos_sex()
+# test_rlos_age()
+# test_sline_month()
 
 """
 Results so far:
@@ -186,11 +255,16 @@ Results so far:
 Strongly dependent:
 age - sline
 sex - sline
+rlos - age
 
 Weakly dependent:
 age - month
 age - sex
 sline - month
+rlos - sex
+
+Almost independent:
+rlos - month
 
 Independent:
 sex - month

@@ -25,14 +25,15 @@ selection = (2, 4, '050')
 # build chart generated data versus historical data
 predicted = repo.predict(selection, 30)
 historical, sd, ed = repo.history(selection, 30)
-plt.title("Generated data vs data from %4d-%02d-%02d to %4d-%02d-%02d"
-          % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day))
+title = "Generated vs historical data from %4d-%02d-%02d to %4d-%02d-%02d" \
+          % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day)
+title += " \nsex: %d, age category: %d, sline: '%s'" % selection
+plt.title(title)
 plt.plot(predicted, 'ro', historical, 'bx')
 plt.show()
 
 # build freqs chart
-plt.title("Generated data vs data from %4d-%02d-%02d to %4d-%02d-%02d"
-          % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day))
+plt.title(title)
 plt.plot(sorted(predicted), 'ro', sorted(historical), 'bx')
 plt.axis([0, 35, -1, 7])
 plt.show()
