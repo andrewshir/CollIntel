@@ -54,7 +54,7 @@ def analyze_plot(data):
     plt.plot(freq.keys(),freq.values())
     plt.show()
 
-def test(zpoints, data, cdf, rvs, ddof = 1):
+def test(zpoints, data, cdf, rvs, ddof = 0):
     obs_freq = fp.calculate_data_freq(zpoints, data)
     exp_prob = fp.calculate_exp_prob(zpoints, cdf)
     exp_freq = fp.convert_prob_2_freq(exp_prob, len(data))
@@ -83,12 +83,12 @@ sex, age, sline = 2, 3, '050'
 
 data = get_data((sex, age, sline))
 # analyze_plot(data)
+# test([1,2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.0),
+#      lambda count: stats.poisson.rvs(mu=2.0, size=count) )
+
 test([1,2,3,4,5], data, lambda x: stats.expon.cdf(x, scale=2.0),
-     lambda count: [int(math.ceil(x)) for x in stats.expon.rvs(scale=2.0, size=count)], 0)
-
-# test([1,2,3,4,5], data, lambda x: stats.norm.cdf(x, loc=2.0, scale=1.7),
-#      lambda count: [int(math.ceil(x)) for x in stats.norm.rvs(loc=2.0, scale=1.7, size=count)], 0)
-
+     lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)], 0)
+     # lambda count: stats.expon.rvs(scale=2.0, size=count))
 
 # rlos_list = np.array(rlos_list)
 # plt.title("Real LOS")
