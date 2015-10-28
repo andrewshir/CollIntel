@@ -23,23 +23,44 @@ repo.add_rlos((3, 4, '387'), lambda count: [int(math.floor(x)) for x in stats.ex
 
 
 # put selection here
-selection = (2, 4, '050')
+selection = (2, 3, '050')
 
 # build chart generated data versus historical data
 predicted = repo.predict(selection, 30)
 historical, sd, ed = repo.history(selection, 30)
-title = "Generated vs historical data from %4d-%02d-%02d to %4d-%02d-%02d" \
+title_common = " [%4d-%02d-%02d %4d-%02d-%02d]" \
           % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day)
-title += " \nsex: %d, age category: %d, sline: '%s'" % selection
-plt.title(title)
-plt.plot([len(ad) for ad in predicted], 'ro', historical, 'bx')
+title_common += " \nsex: %d, age category: %d, sline: '%s'" % selection
+plt.title("Patients number by day" + title_common)
+# plt.plot([len(ad) for ad in predicted], 'ro', [len(ad) for ad in historical], 'bx')
+f1, = plt.plot([len(ad) for ad in predicted], 'ro', label='model')
+f2, = plt.plot([len(ad) for ad in historical], 'bx', label='history')
+plt.legend(handles=[f1, f2])
 plt.show()
 
-# build freqs chart
-plt.title(title)
-plt.plot(sorted([len(ad) for ad in predicted]), 'ro', sorted(historical), 'bx')
+# build patients number freqs chart
+plt.title("Patients number freqs" + title_common)
+f1, = plt.plot(sorted([len(ad) for ad in predicted]), 'ro', label='model')
+f2, = plt.plot(sorted([len(ad) for ad in historical]), 'bx', label='history')
 plt.axis([0, 35, -1, 7])
+plt.legend(handles=[f1, f2])
 plt.show()
+
+# build rlos freqs chart
+rlos_predicted = sorted([p.rlos if p.rlos > 0 else 1 for ps in predicted for p in ps])
+rlos_historical = sorted([p.rlos for ps in historical for p in ps])
+plt.title("Rlos freqs" + title_common)
+f1, = plt.plot(rlos_predicted, 'ro', label='model')
+f2, = plt.plot(rlos_historical, 'bx', label='history')
+plt.axis([0, 20, -1, 10])
+plt.legend(handles=[f1, f2])
+plt.show()
+
+
+# historical_sort = sorted(historical)
+#
+# for i in xrange(min(len(predicted_sort), len(historical_sort))):
+#     print (predicted_sort[i], historical_sort[i])
 
 
 # for tuple, prob in get_patients_freq().items():
