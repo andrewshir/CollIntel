@@ -17,7 +17,7 @@ class Repository(object):
         self.rvs[(sex, age, sline)] = sline_info
 
     def add_rlos(self, (sex, age, sline), rlos_function):
-        self.rvs[(sex, age, sline)] = rlos_function
+        self.rlos[(sex, age, sline)] = rlos_function
 
     def predict(self, (sex, age, sline), days=30):
         """Generates patients flow for selected combination of (sex, age, sline)"""
@@ -30,7 +30,7 @@ class Repository(object):
                                % (sex, age, sline))
 
         if (sex, age, sline) in self.rlos:
-            rlos_flow = self.rlos(100)
+            rlos_flow = self.rlos[(sex, age, sline)](100)
         else:
             rlos_flow = None
 
@@ -65,10 +65,14 @@ class Repository(object):
             agef = split_age(int(row[9]))
             sexf = int(row[10])
             slinef = row[14]
+            rlos = row[5]
 
             if sline is None:
                 continue
             if len(admit_date) == 0:
+                continue
+
+            if len(rlos) == 0:
                 continue
 
             if (sex, age, sline) != (sexf, agef, slinef):
@@ -77,8 +81,8 @@ class Repository(object):
 
             start_date = datetime if start_date is None or datetime < start_date else start_date
             end_date = datetime if end_date is None or datetime > end_date else end_date
-            hist_data.setdefault(datetime, 0)
-            hist_data[datetime] += 1
+            hist_data.setdefault(datetime, [])
+            hist_data[datetime].append(AdmitInfo(int(rlos)))
 
         start_day = random.randint(0, (end_date - start_date).days)
         end_day = start_day + days
@@ -90,7 +94,7 @@ class Repository(object):
         result = []
         for day in range(start_day, end_day + 1):
             day_dt = start_date + timedelta(day)
-            result.append(hist_data[day_dt] if day_dt in hist_data else 0)
+            result.append(hist_data[day_dt] if day_dt in hist_data else [])
 
         return result, start_date + timedelta(start_day), start_date + timedelta(end_day)
 
