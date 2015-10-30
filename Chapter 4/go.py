@@ -8,5 +8,6 @@ import searchengine
 # crawler.close()
 
 e=searchengine.searcher('searchindex.db')
-print e.query('functional programming')
+print e.query('procedural language')
+# e.calculatepagerank()
 e.close()
