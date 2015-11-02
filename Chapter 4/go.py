@@ -20,6 +20,16 @@ uWorldBank,uRiver,uEarth = 201, 202, 203
 # mynet.generatehiddennode([wWorld,wBank],[uWorldBank,uRiver,uEarth])
 # for c in mynet.con.execute('select * from wordhidden'): print c
 # for c in mynet.con.execute('select * from hiddenurl'): print c
-mynet.trainquery([wWorld,wBank], [uWorldBank,uRiver,uEarth], uWorldBank)
-print mynet.getresult([wWorld,wBank],[uWorldBank,uRiver,uEarth])
+
+allurls=[uWorldBank,uRiver,uEarth]
+for i in range(30):
+    mynet.trainquery([wWorld,wBank],allurls,uWorldBank)
+    mynet.trainquery([wRiver,wBank],allurls,uRiver)
+    mynet.trainquery([wWorld],allurls,uEarth)
+
+print mynet.getresult([wWorld,wBank],allurls)
+print mynet.getresult([wRiver,wBank],allurls)
+print mynet.getresult([wBank],allurls)
+# mynet.trainquery([wWorld,wBank], [uWorldBank,uRiver,uEarth], uWorldBank)
+# print mynet.getresult([wWorld,wBank],[uWorldBank,uRiver,uEarth])
 mynet.close()

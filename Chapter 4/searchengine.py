@@ -1,11 +1,13 @@
 __author__ = 'Andrew'
 import urllib2
+import nn
 from BeautifulSoup import *
 from urlparse import urljoin
 # Create a list of words to ignore
 ignorewords=set(['the','of','to','and','a','in','is','it'])
 from sqlite3 import dbapi2 as sqlite
 
+mynet=nn.searchnet('nn.db')
 
 class crawler(object):
     def __init__(self, dbname):
@@ -206,7 +208,7 @@ class searcher(object):
         rankedscores=sorted([(score,url) for (url,score) in scores.items( )],reverse=1)
         for (score,urlid) in rankedscores[0:10]:
             print '%f\t%s' % (score,self.geturlname(urlid))
-
+        return wordids, [r[1] for r in rankedscores[0:10]]
 
     def normalizescores(self,scores,smallIsBetter=0):
         vsmall=0.00001 # Avoid division by zero errors
@@ -298,3 +300,10 @@ class searcher(object):
         maxscore=max(linkscores.values())
         normalizedscores=dict([(u,float(l)/maxscore) for (u,l) in linkscores.items( )])
         return normalizedscores
+
+    def nnscore(self, rows, wordids):
+        # Get unique URL IDs as an ordered list
+        urlids=[urlid for urlid in set([row[0] for row in rows])]
+        nnres=mynet.getresult(wordids,urlids)
+        scores=dict([(urlids[i],nnres[i]) for i in range(len(urlids))])
+        return self.normalizescores(scores)
