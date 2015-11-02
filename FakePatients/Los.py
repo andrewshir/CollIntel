@@ -80,22 +80,23 @@ def test(zpoints, data, cdf, rvs, ddof = 0):
     plt.plot(x_values, obs_data, 'ro', x_values, rand_data, '-')
     plt.show()
 
-# sex, age, sline = 2, 3, '050'
-sex, age, sline = 3, 4, '387'
+sex, age, sline = 3, 5, '050'
+# sex, age, sline = 3, 4, '387'
 
 data = get_data((sex, age, sline))
-# analyze_plot(data)
+analyze_plot(data)
 
 # 3, 4, '387'
-test([1,2,3,4,5], data, lambda x: stats.expon.cdf(x, scale=2.4),
-     lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.4, size=count)])
+# test([1,2,3,4,5], data, lambda x: stats.expon.cdf(x, scale=2.4),
+#      lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.4, size=count)])
 
 # 2, 3, '050'
 # test([1,2,3,4,5], data, lambda x: stats.expon.cdf(x, scale=2.0),
 #      lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)])
 
-# test([1,2,3,4,5], data, lambda x: stats.poisson.cdf(x, mu=2.0),
-#      lambda count: stats.poisson.rvs(mu=2.0, size=count) )
+test([1,2,3,4], data, lambda x: stats.expon.cdf(x, scale=6.0),
+     lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=6.0, size=count)])
+
 # rlos_list = np.array(rlos_list)
 # plt.title("Real LOS")
 # plt.hist(rlos_list, bins=25)

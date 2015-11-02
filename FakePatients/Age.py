@@ -71,6 +71,7 @@ data = filter_age_data(all_data, sline_code)
 # analyze_plot(sline_code, data)
 test([40, 60, 80], data,
      lambda x: stats.norm.cdf(x, loc=70.0, scale=16),
-     lambda count: [ x for x in stats.norm.rvs(loc=70.0, scale=16, size=count) if 18 <= x <= 100])
+     lambda count: [18 if x < 18 else 100 if x > 103 else x
+                    for x in stats.norm.rvs(loc=70.0, scale=16, size=count)])
 
 

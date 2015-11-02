@@ -7,49 +7,60 @@ from datetime import timedelta
 import random
 
 class Repository(object):
-    def __init__(self):
-        self.all_data = load_data_with_sline()
+    def __init__(self, all_data=None):
+        self.all_data = load_data_with_sline() if all_data is None else all_data
         self.empty = set(get_empty_combinations(self.all_data))
-        self.rvs = {}
-        self.rlos = {}
+        self.patients_count_distr = {}
+        self.rlos_distr = {}
+        self.age_distr = {}
 
-    def add_rvs(self, (sex, age, sline), sline_info):
-        self.rvs[(sex, age, sline)] = sline_info
+    def add_patients_count_distr(self, (sex, age, sline), distr_info):
+        self.patients_count_distr[(sex, age, sline)] = distr_info
 
-    def add_rlos(self, (sex, age, sline), rlos_function):
-        self.rlos[(sex, age, sline)] = rlos_function
+    def add_rlos_distr(self, (sex, age, sline), rlos_function):
+        self.rlos_distr[(sex, age, sline)] = rlos_function
 
-    def predict(self, (sex, age, sline), days=30):
+    def add_age_distr(self, sline, age_function):
+        self.age_distr[sline] = age_function
+
+    def predict_patient_flow(self, (sex, age, sline), days=30):
         """Generates patients flow for selected combination of (sex, age, sline)"""
         if (sex, age, sline) in self.empty:
             raise RuntimeError('Desired combination of sex %d, age %d, sline %s is missed in historical data'
                                % (sex, age, sline))
 
-        if (sex, age, sline) not in self.rvs:
-            raise NotImplementedError('Desired combination of sex %d, age %d, sline %s is not implemented'
+        if (sex, age, sline) not in self.patients_count_distr:
+            raise NotImplementedError('Patient flow for selection: sex %d, age %d, sline %s is not implemented'
                                % (sex, age, sline))
 
-        if (sex, age, sline) in self.rlos:
-            rlos_flow = self.rlos[(sex, age, sline)](100)
-        else:
-            rlos_flow = None
+        if sline not in self.age_distr:
+            raise NotImplementedError('Age distribution for sline %s is not implemented'
+                               % sline)
 
-        sline_info = self.rvs[(sex, age, sline)]
-        patients_flow = sline_info.rvs(days).tolist()
+        if (sex, age, sline) not in self.rlos_distr:
+            raise NotImplementedError('RLos distribution for selection: sex %d, age %d, sline %s is not implemented'
+                               % (sex, age, sline))
+
+        rlos_flow_func = lambda: self.rlos_distr[(sex, age, sline)](100)
+        rlos_flow = rlos_flow_func()
+        age_flow_func = lambda: [a for a in self.age_distr[sline](500) if split_age(a) == age]
+        age_flow = age_flow_func()
+        sline_distr_info = self.patients_count_distr[(sex, age, sline)]
+        patients_flow = sline_distr_info.rvs(days).tolist()
 
         result = []
         for iday in range(days):
-            if sline_info.prob == 1.0 or random.random() <= sline_info.prob:
-                v = patients_flow.pop()
-                #todo: move convertion from 0 to 1 to rvs function
+            if sline_distr_info.prob == 1.0 or random.random() <= sline_distr_info.prob:
+                pat_count = patients_flow.pop()
                 admits = []
-                for p in xrange(1 if v == 0 else v):
-                    if rlos_flow is None:
-                        admits.append(AdmitInfo(-1))
-                    else:
-                        admits.append(AdmitInfo(rlos_flow.pop()))
-                        if len(rlos_flow) == 0:
-                            rlos_flow = self.rlos(100)
+                #todo: move convertion from 0 to 1 to rvs function
+                for p in xrange(1 if pat_count == 0 else pat_count):
+                    admits.append(AdmitInfo(str(iday+1), sex, age_flow.pop(), sline, rlos_flow.pop()))
+                    if len(rlos_flow) == 0:
+                        rlos_flow = rlos_flow_func()
+                    if len(age_flow) == 0:
+                        age_flow = age_flow_func()
+
                 result.append(admits)
             else:
                 result.append([])
@@ -62,7 +73,8 @@ class Repository(object):
         hist_data = {}
         for row in self.all_data:
             admit_date = row[2]
-            agef = split_age(int(row[9]))
+            agef_in_years = int(row[9])
+            agef = split_age(agef_in_years)
             sexf = int(row[10])
             slinef = row[14]
             rlos = row[5]
@@ -82,7 +94,7 @@ class Repository(object):
             start_date = datetime if start_date is None or datetime < start_date else start_date
             end_date = datetime if end_date is None or datetime > end_date else end_date
             hist_data.setdefault(datetime, [])
-            hist_data[datetime].append(AdmitInfo(int(rlos)))
+            hist_data[datetime].append(AdmitInfo(admit_date, sex, agef_in_years, sline, int(rlos)))
 
         start_day = random.randint(0, (end_date - start_date).days)
         end_day = start_day + days
@@ -98,9 +110,21 @@ class Repository(object):
 
         return result, start_date + timedelta(start_day), start_date + timedelta(end_day)
 
+
 class AdmitInfo(object):
-    def __init__(self, rlos):
+    """Describes single patient admittance"""
+    def __init__(self, date, sex, age, sline, rlos):
+        self.date = date
+        self.sex = sex
+        self.age = age
+        self.sline = sline
         self.rlos = rlos
+
+    def get_age_category(self):
+        return split_age(self.age)
+
+    def __str__(self):
+        return "%s(%d,%d,%s)rlos:%d" % (self.date, self.sex, self.age, self.sline, self.rlos)
 
 class DistrInfo(object):
     """Describes sline patient count distribution"""

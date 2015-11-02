@@ -9,17 +9,17 @@ import math
 
 repo = Repository()
 # Cardiology 35-50
-repo.add_rvs((2, 3, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.17, size=x), 0.14))
-repo.add_rlos((2, 3, '050'), lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)])
+repo.add_patients_count_distr((2, 3, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.17, size=x), 0.14))
+repo.add_rlos_distr((2, 3, '050'), lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)])
 # Cardiology 50-70
-repo.add_rvs((2, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.46, size=x), 0.45))
+repo.add_patients_count_distr((2, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.46, size=x), 0.45))
 # Cardiology 50-70
-repo.add_rvs((3, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.3, size=x), 0.336))
+repo.add_patients_count_distr((3, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.3, size=x), 0.336))
 # Urological Surgery 50-70
-repo.add_rvs((2, 4, '387'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.44, size=x), 0.267))
+repo.add_patients_count_distr((2, 4, '387'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.44, size=x), 0.267))
 # Urological Surgery 50-70
-repo.add_rvs((3, 4, '387'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.17, size=x), 0.08))
-repo.add_rlos((3, 4, '387'), lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.4, size=count)])
+repo.add_patients_count_distr((3, 4, '387'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.17, size=x), 0.08))
+repo.add_rlos_distr((3, 4, '387'), lambda count: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.4, size=count)])
 
 
 # put selection here
@@ -57,13 +57,42 @@ plt.legend(handles=[f1, f2])
 plt.show()
 
 
-# historical_sort = sorted(historical)
+def metric(list):
+    if len(list) == 0:
+        return 0
+    result = 0
+    for x in list: result += x
+    return result
+
+# # build diff chart
+# n_iter = 100
+# model = []
+# historic = []
+# for i in xrange(n_iter):
+#     predicted = repo.predict(selection, 30)
+#     historical, sd, ed = repo.history(selection, 30)
 #
-# for i in xrange(min(len(predicted_sort), len(historical_sort))):
-#     print (predicted_sort[i], historical_sort[i])
+#     rlos_predicted = metric([p.rlos if p.rlos > 0 else 1 for ps in predicted for p in ps])
+#     rlos_historical = metric([p.rlos for ps in historical for p in ps])
+#
+#     # z = float(max(rlos_historical, rlos_predicted))
+#     # rlos_historical = float(rlos_historical) / z
+#     # rlos_predicted = float(rlos_predicted) / z
+#
+#     model.append(rlos_predicted)
+#     historic.append(rlos_historical)
+#     # print 'Add new point (%s, %s)' % (model[-1], historic[-1])
+#
+# model = sorted(model)
+# historic = sorted(historic)
+#
+# plt.title('Difference between predicted and historic data')
+# plt.xlabel('model')
+# plt.ylabel('real')
+# plt.plot(historic, 'bx', label='history')
+# plt.plot(model, 'ro', label='model')
+# plt.show()
 
 
-# for tuple, prob in get_patients_freq().items():
-#     print tuple, prob
 
 
