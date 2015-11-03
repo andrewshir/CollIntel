@@ -75,29 +75,44 @@ def run_once(selection):
                 print str(p),
             print
 
+def show_patient_chart(model, history):
+    # build chart generated data versus historical data
+    title_common = " Model versus history"
+    plt.title("Patients number by day")
+    f1, = plt.plot(sorted([x for x in model]), 'ro', label='model')
+    f2, = plt.plot(sorted([x for x in history]), 'bx', label='history')
+    plt.legend(handles=[f1, f2])
+    plt.show()
 
-def generate_data(model_number=1, historic_number=1):
+def generate_data(model_number=1, historic_number=1, patient_chart=False):
     result = []
     models_counter = 1
 
-    sline = '050'
-    for sex in [2, 3]:
-        for age in [2,3,4,5]:
+    sline_list = ['050']
+    for sline in sline_list:
+        for sex in [2, 3]:
+            for age in [2, 3 ,4, 5]:
 
-            for i in range(model_number):
-                predicted = repo.predict_patient_flow((sex, age, sline), 30)
-                for day in predicted:
-                    for a in day:
-                        id = "M%02d" % models_counter
-                        result.append((id, a.date, a.sex, a.age, a.sline, a.rlos))
-                models_counter += 1
+                for i in range(model_number):
+                    predicted = repo.predict_patient_flow((sex, age, sline), 30)
+                    for day in predicted:
+                        for a in day:
+                            id = "M%02d (%d, %d, %s)" % (models_counter, a.sex, a.get_age_category(), a.sline)
+                            result.append((id, a.date, a.sex, a.age, a.sline, a.rlos))
+                    models_counter += 1
 
-            for i in range(historic_number):
-                historical, sd, ed = repo.history((sex, age, sline), 30)
-                for day in historical:
-                    for a in day:
-                        id = "H[%4d-%02d-%02d:%4d-%02d-%02d]" % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day)
-                        result.append((id, a.date, a.sex, a.age, a.sline, a.rlos))
+                for i in range(historic_number):
+                    historical, sd, ed = repo.history((sex, age, sline), 30)
+                    for day in historical:
+                        for a in day:
+                            id = "H[%4d-%02d-%02d:%4d-%02d-%02d]" % (sd.year, sd.month, sd.day, ed.year, ed.month, ed.day)
+                            result.append((id, a.date, a.sex, a.age, a.sline, a.rlos))
+
+
+    if patient_chart:
+        show_patient_chart([a[5] for a in result if a[0][0] == 'M'],
+                           [a[5] for a in result if a[0][0] == 'H'])
+
     return result
 
 def create_file(filename='demo.csv'):
@@ -113,5 +128,5 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-# print generate_data()
-create_file('demo1.csv')
+print generate_data(1,1,True)
+# create_file('demo1.csv')
