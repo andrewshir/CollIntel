@@ -97,6 +97,24 @@ class searchnet:
             for urlid in self.urlids]
             for hiddenid in self.hiddenids]
 
+    def print_network(self):
+        print "input layer - hidden layer"
+        cur=self.con.execute('select fromid, toid, strength from wordhidden')
+        for row in cur: print row[0], row[1], row[2]
+        print
+
+        print "hidden layer"
+        cur=self.con.execute('select create_key from hiddennode')
+        for row in cur: print row[0]
+        print
+
+        print "hidden layer - output layer"
+        cur=self.con.execute('select fromid, toid, strength from hiddenurl')
+        for row in cur: print row[0], row[1], row[2]
+        print
+
+
+
     def feedforward(self):
         # the only inputs are the query words
         for i in range(len(self.wordids)):
