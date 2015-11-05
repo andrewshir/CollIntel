@@ -90,8 +90,8 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
 
     sline_list = ['050']
     for sline in sline_list:
-        for sex in [2, 3]:
-            for age in [2, 3 ,4, 5]:
+        for sex in [2]: # [2, 3]
+            for age in [3]: # [2, 3 ,4, 5]
 
                 for i in range(model_number):
                     predicted = repo.predict_patient_flow((sex, age, sline), 30)
@@ -128,5 +128,5 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-print generate_data(1,1,True)
+generate_data(10,10,True)
 # create_file('demo1.csv')
