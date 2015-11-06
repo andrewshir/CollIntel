@@ -14,11 +14,34 @@ class Repository(object):
         self.rlos_distr = {}
         self.age_distr = {}
 
+    def rvs_filtered(self, rvs_func, size, filter_func=None):
+        if filter_func is None:
+            return rvs_func(size)
+        else:
+            result = rvs_func(size)
+            result = [x for x in result if filter_func(x)]
+            delta = size - len(result)
+            maxdelta = delta
+            n_iter = 0
+            while delta > 0:
+                maxdelta = max(delta, maxdelta) + 5
+                result = rvs_func(size + maxdelta)
+                result = [x for x in result if filter_func(x)]
+                delta = size - len(result)
+                if n_iter > 1000:
+                    raise RuntimeError("Too strong filtration condition")
+                n_iter += 1
+            return result[0:size]
+
     def add_patients_count_distr(self, (sex, age, sline), distr_info):
         self.patients_count_distr[(sex, age, sline)] = distr_info
 
-    def add_rlos_distr(self, (sex, age, sline), rlos_function):
-        self.rlos_distr[(sex, age, sline)] = rlos_function
+    def add_rlos_distr(self, (sex, age, sline), rlos_function, rlos_filter_function=None):
+        if rlos_filter_function is None:
+            self.rlos_distr[(sex, age, sline)] = rlos_function
+        else:
+            self.rlos_distr[(sex, age, sline)] = \
+                lambda size: self.rvs_filtered(rlos_function, size, rlos_filter_function)
 
     def add_age_distr(self, sline, age_function):
         self.age_distr[sline] = age_function

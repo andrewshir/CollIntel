@@ -7,6 +7,9 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import math
 
+
+
+
 # print get_patients_freq()
 
 repo = Repository()
@@ -17,42 +20,50 @@ repo.add_age_distr('050', lambda count: [18 if x < 18 else 103 if x > 103 else i
 # Cardiology <35
 repo.add_patients_count_distr((2, 2, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.1, size=x), 0.7))
 repo.add_rlos_distr((2, 2, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology 35-50
 repo.add_patients_count_distr((2, 3, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.17, size=x), 0.14))
 repo.add_rlos_distr((2, 3, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.0, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology 50-70
 repo.add_patients_count_distr((2, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.46, size=x), 0.45))
 repo.add_rlos_distr((2, 4, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=2.2, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.2, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology >70
 repo.add_patients_count_distr((2, 5, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.6, size=x), 0.53))
 repo.add_rlos_distr((2, 5, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=4.3, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=4.3, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology <35
 repo.add_patients_count_distr((3, 2, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.05, size=x), 0.05))
 repo.add_rlos_distr((3, 2, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=1.8, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=1.8, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology 35-50
 repo.add_patients_count_distr((3, 3, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.05, size=x), 0.09))
 repo.add_rlos_distr((3, 3, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=2.3, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.3, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology 50-70
 repo.add_patients_count_distr((3, 4, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.3, size=x), 0.336))
 repo.add_rlos_distr((3, 4, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=2.5, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=2.5, size=size)],
+                    lambda x: x >= 1)
 
 # Cardiology 50-70
 repo.add_patients_count_distr((3, 5, '050'), DistrInfo(lambda x: stats.poisson.rvs(mu=2.0, size=x), 0.63))
 repo.add_rlos_distr((3, 5, '050'),
-                    lambda count: [1 if x < 1 else int(math.floor(x)) for x in stats.expon.rvs(scale=6.0, size=count)])
+                    lambda size: [int(math.floor(x)) for x in stats.expon.rvs(scale=6.0, size=size)],
+                    lambda x: x >= 1)
 
 # Urological Surgery <35
 repo.add_patients_count_distr((2, 2, '387'), DistrInfo(lambda x: stats.poisson.rvs(mu=1.16, size=x), 0.22))
@@ -90,8 +101,8 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
 
     sline_list = ['050']
     for sline in sline_list:
-        for sex in [2]: # [2, 3]
-            for age in [3]: # [2, 3 ,4, 5]
+        for sex in [2, 3]: # [2, 3]
+            for age in [2, 3 ,4, 5]: # [2, 3 ,4, 5]
 
                 for i in range(model_number):
                     predicted = repo.predict_patient_flow((sex, age, sline), 30)
@@ -116,7 +127,7 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
     return result
 
 def create_file(filename='demo.csv'):
-    data = generate_data()
+    data = generate_data(5,5)
     file = working_path + filename
     with open(file, 'wb') as csvfile:
         writer = csv.writer(csvfile)
@@ -128,5 +139,6 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-generate_data(10,10,True)
-# create_file('demo1.csv')
+# data = generate_data(100, 100, True)
+
+create_file('demo2.csv')
