@@ -6,8 +6,7 @@ from FakePatients import working_path
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 import math
-
-
+import numpy as np
 
 
 # print get_patients_freq()
@@ -88,11 +87,41 @@ def run_once(selection):
 
 def show_patient_chart(model, history):
     # build chart generated data versus historical data
-    title_common = " Model versus history"
     plt.title("Patients number by day")
     f1, = plt.plot(sorted([x for x in model]), 'ro', label='model')
     f2, = plt.plot(sorted([x for x in history]), 'bx', label='history')
     plt.legend(handles=[f1, f2])
+    plt.show()
+
+def show_patient_chart2(model, history):
+    """build freq chart for model and historical data"""
+    freq_model = {}
+    freq_hist = {}
+    for x in model:
+        freq_model.setdefault(x, 0)
+        freq_model[x] += 1
+
+    for x in history:
+        freq_hist.setdefault(x, 0)
+        freq_hist[x] += 1
+
+    keys = list(set(freq_model.keys() + freq_hist.keys()))
+    keys.sort()
+
+    model = []
+    history = []
+    for key in keys:
+        model.append(0 if key not in freq_model else freq_model[key])
+        history.append(0 if key not in freq_hist else freq_hist[key])
+
+    N = len(keys)
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.35       # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, model, width, color='r')
+    rects2 = ax.bar(ind + width, history, width, color='y')
+
+    ax.legend((rects1[0], rects2[0]), ("Model", "History"))
     plt.show()
 
 def generate_data(model_number=1, historic_number=1, patient_chart=False):
@@ -121,7 +150,7 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
 
 
     if patient_chart:
-        show_patient_chart([a[5] for a in result if a[0][0] == 'M'],
+        show_patient_chart2([a[5] for a in result if a[0][0] == 'M'],
                            [a[5] for a in result if a[0][0] == 'H'])
 
     return result
@@ -139,6 +168,6 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-# data = generate_data(100, 100, True)
+data = generate_data(3, 3, True)
 
-create_file('demo2.csv')
+# create_file('demo2.csv')
