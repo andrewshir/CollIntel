@@ -124,6 +124,37 @@ def show_patient_chart2(model, history):
     ax.legend((rects1[0], rects2[0]), ("Model", "History"))
     plt.show()
 
+def show_patient_chart3(data):
+    freq = {}
+    for row in data:
+        id = row[0]
+        rlos = row[5]
+
+        freq.setdefault(rlos, {})
+        freq[rlos].setdefault(id, 0)
+        freq[rlos][id] += 1
+
+    model = []
+    history = []
+    keys = freq.keys()
+    keys.sort()
+    for rlos_key in keys:
+        m = []
+        h = []
+        for id_key in freq[rlos_key].keys():
+            if id_key[0] == 'M':
+                m.append(freq[rlos_key][id_key])
+            else:
+                h.append(freq[rlos_key][id_key])
+
+        if len(m) != 0:
+            model.extend([rlos_key for x in xrange(int(round(sum(m)/float(len(m)))))])
+
+        if len(h) != 0:
+            history.extend([rlos_key for x in xrange(int(round(sum(h)/float(len(h)))))])
+
+    show_patient_chart2(model, history)
+
 def generate_data(model_number=1, historic_number=1, patient_chart=False):
     result = []
     models_counter = 1
@@ -150,8 +181,9 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
 
 
     if patient_chart:
-        show_patient_chart2([a[5] for a in result if a[0][0] == 'M'],
-                           [a[5] for a in result if a[0][0] == 'H'])
+        show_patient_chart3(result)
+        # show_patient_chart2([a[5] for a in result if a[0][0] == 'M'],
+        #                    [a[5] for a in result if a[0][0] == 'H'])
 
     return result
 
@@ -168,6 +200,6 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-data = generate_data(3, 3, True)
+data = generate_data(5, 5, True)
 
 # create_file('demo2.csv')
