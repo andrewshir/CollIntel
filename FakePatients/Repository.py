@@ -67,7 +67,7 @@ class Repository(object):
         rlos_flow_func = lambda: self.rlos_distr[(sex, age, sline)](100)
         rlos_flow = rlos_flow_func()
         age_flow_func = lambda: [a for a in self.age_distr[sline](500) if split_age(a) == age]
-        age_flow = age_flow_func()
+        age_flow = self.recall_if_empty(age_flow_func)
         sline_distr_info = self.patients_count_distr[(sex, age, sline)]
         patients_flow = sline_distr_info.rvs(days).tolist()
 
@@ -132,6 +132,17 @@ class Repository(object):
             result.append(hist_data[day_dt] if day_dt in hist_data else [])
 
         return result, start_date + timedelta(start_day), start_date + timedelta(end_day)
+
+    def  recall_if_empty(self, lmbd):
+        """Calls lambda several times if result is empty"""
+        result = lmbd()
+        call_count = 1
+        while len(result) == 0:
+            if call_count >= 10:
+                raise RuntimeError("Cannot get non-empty values from lambda")
+            result = lmbd()
+            call_count += 1
+        return result
 
 
 class AdmitInfo(object):
