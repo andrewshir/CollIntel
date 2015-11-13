@@ -181,14 +181,14 @@ def generate_data(model_number=1, historic_number=1, patient_chart=False):
 
 
     if patient_chart:
-        show_patient_chart3(result)
-        # show_patient_chart2([a[5] for a in result if a[0][0] == 'M'],
-        #                    [a[5] for a in result if a[0][0] == 'H'])
+        # show_patient_chart3(result)
+        show_patient_chart([a[5] for a in result if a[0][0] == 'M'],
+                           [a[5] for a in result if a[0][0] == 'H'])
 
     return result
 
-def create_file(filename='demo.csv'):
-    data = generate_data(5,5)
+def create_file(filename='demo.csv', model_number=5, historic_number=5):
+    data = generate_data(model_number, historic_number)
     file = working_path + filename
     with open(file, 'wb') as csvfile:
         writer = csv.writer(csvfile)
@@ -200,6 +200,6 @@ def create_file(filename='demo.csv'):
 # put selection here
 # run_once((3, 4, '050'))
 
-data = generate_data(5, 5, True)
+data = generate_data(100, 100, True)
 
-# create_file('demo2.csv')
+# create_file('demo2.csv', 10, 10)
