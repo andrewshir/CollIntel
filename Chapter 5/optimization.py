@@ -1,5 +1,6 @@
 __author__ = 'Andrew'
 import time
+import sys
 import random
 import math
 
@@ -12,6 +13,8 @@ people = [('Seymour','LED'),
 
 destination='DME'
 
+
+
 def getminutes(t):
     x=time.strptime(t,'%H:%M')
     return x[3]*60+x[4]
@@ -20,8 +23,8 @@ def printschedule(r):
     for d in range(len(r)/2):
         name=people[d][0]
         origin=people[d][1]
-        out=flights[(origin,destination)][r[d]]
-        ret=flights[(destination,origin)][r[d+1]]
+        out=flights[(origin,destination)][r[d*2]]
+        ret=flights[(destination,origin)][r[d*2+1]]
         print '%10s%10s %5s-%5s $%3s %5s-%5s $%3s' % (name,origin,
                                                       out[0],out[1],out[2],
                                                       ret[0],ret[1],ret[2])
@@ -34,8 +37,8 @@ def schedulecost(sol):
     for d in range(len(sol)/2):
         # Get the inbound and outbound flights
         origin=people[d][1]
-        outbound=flights[(origin,destination)][int(sol[d])]
-        returnf=flights[(destination,origin)][int(sol[d+1])]
+        outbound=flights[(origin,destination)][int(sol[d*2])]
+        returnf=flights[(destination,origin)][int(sol[d*2+1])]
 
         # Total price is the price of all outbound and return flights
         totalprice+=outbound[2]
@@ -50,14 +53,63 @@ def schedulecost(sol):
     totalwait=0
     for d in range(len(sol)/2):
         origin=people[d][1]
-        outbound=flights[(origin,destination)][int(sol[d])]
-        returnf=flights[(destination,origin)][int(sol[d+1])]
+        outbound=flights[(origin,destination)][int(sol[d*2])]
+        returnf=flights[(destination,origin)][int(sol[d*2+1])]
         totalwait+=latestarrival-getminutes(outbound[1])
         totalwait+=getminutes(returnf[0])-earliestdep
 
     # Does this solution require an extra day of car rental? That'll be $50!
     if latestarrival>earliestdep: totalprice+=50
     return totalprice+totalwait
+
+def random_optimization(domain, cost, iter=1000):
+    best = sys.maxint
+    result = None
+
+    for j in xrange(iter):
+        s = []
+        for i in xrange(len(domain)):
+            s.append(random.randint(0, domain[i])-1)
+
+        c = cost(s)
+        if c < best:
+            best = c
+            result = s
+    return result, best
+
+def hill_climb_optimization(domain, cost):
+    best = sys.maxint
+    result = None
+
+    # define random initial solution
+    s = []
+    for i in xrange(len(domain)):
+        s.append(random.randint(0, domain[i])-1)
+    best_n = cost(s)
+
+    while best_n < best:
+        best = best_n
+        result = s
+        best_n = sys.maxint
+        neighbors = []
+        for i in xrange(len(s)):
+            if s[i] < domain[i]-1:
+                n = []
+                n.extend(s)
+                n[i] = n[i] + 1
+                neighbors.append(n)
+            if s[i] > 0:
+                n = []
+                n.extend(s)
+                n[i] = n[i] - 1
+                neighbors.append(n)
+
+        for neighbor in neighbors:
+            c = cost(neighbor)
+            if c < best_n:
+                best_n = c
+                s = neighbor
+    return result, best
 
 flights = {}
 for line in file(working_path + 'schedule.txt'):
@@ -67,6 +119,10 @@ for line in file(working_path + 'schedule.txt'):
     # Add details to the list of possible flights
     flights[(origin,dest)].append((depart,arrive,int(price)))
 
-s = [1 for x in xrange(8)]
-printschedule(s)
-print schedulecost(s)
+# s = [1 for x in xrange(8)]
+# printschedule(s)
+# print schedulecost(s)
+domain= [11, 12, 6, 5, 10, 8, 7, 8]
+sol, cost = hill_climb_optimization(domain, schedulecost)
+print "Cost = " + str(cost)
+printschedule(sol)
