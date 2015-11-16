@@ -111,6 +111,104 @@ def hill_climb_optimization(domain, cost):
                 s = neighbor
     return result, best
 
+def generic_simulated_annealing_optimization(domain, costf):
+    best = sys.maxint
+    result = None
+    for i in xrange(15):
+        sol, cost = simulated_annealing_optimization(domain, costf)
+        if cost < best:
+            result = sol
+            best = cost
+    return result, best
+
+def simulated_annealing_optimization(domain, costf, T=10000, cooldown=0.95):
+    #initial solution
+    sol = [random.randint(0, x-1) for x in domain]
+    cost = costf(sol)
+
+    while T > 1.0:
+        nsol = []
+        nsol.extend(sol)
+        c = random.randint(0, len(domain)-1)
+        if random.random() < 0.5 and sol[c] < domain[c]-1:
+            nsol[c] = sol[c] + 1
+        elif sol[c] > 0:
+            nsol[c] = sol[c] - 1
+
+        ncost = costf(nsol)
+        p = pow(math.e, (-ncost-cost)/float(T))
+
+        if random.random() < p or ncost < cost:
+            sol = nsol
+            cost = ncost
+
+        T *= cooldown
+    return sol, cost
+
+def genetic_optimization(domain, costf, popsize=50, elite=0.2, mutprob=0.3, not_changed_cost_count=50):
+    def mutate(sol):
+        result = []
+        result.extend(sol)
+        c = random.randint(0, len(domain)-1)
+        if random.random() < 0.5 and sol[c] > 0:
+            result[c] -= 1
+        elif sol[c] < domain[c]-1:
+            result[c] += 1
+        return result
+
+    def crossover(sol1, sol2):
+        result = []
+        c = random.randint(1, len(domain)-2)
+        result = sol1[0:c] + sol2[c:]
+        return result
+
+    def all_the_same(list):
+        if len(list) < 2:
+            return False
+        for el in list:
+            if el != list[0]:
+                return False
+        return True
+
+    # initial population
+    pop = []
+    for i in xrange(50):
+        pop.append([random.randint(0, x-1) for x in domain])
+
+    latest_sol = []
+
+    while not all_the_same(latest_sol):
+        # define best solutions
+        scored_pop = [(costf(s), s) for s in pop]
+        scored_pop.sort(key=lambda tup: tup[0])
+        topsol = int(elite*len(scored_pop))
+
+        pop = []
+        pop.extend([tup[1] for tup in scored_pop[0:topsol]])
+        while len(pop) < popsize:
+            if random.random() < mutprob:
+                # mutation
+                c = random.randint(0, topsol-1)
+                pop.append(mutate(pop[c]))
+            else:
+                # crossover
+                c1 = random.randint(0, topsol-1)
+                c2 = random.randint(0, topsol-1)
+
+                # to be sure we don't cross the same solution
+                while c1 == c2:
+                    c1 = random.randint(0, topsol-1)
+                    c2 = random.randint(0, topsol-1)
+
+                pop.append(crossover(pop[c1], pop[c2]))
+
+        latest_sol.append(scored_pop[0][0])
+        if len(latest_sol) > not_changed_cost_count:
+            latest_sol.remove(latest_sol[0])
+        print scored_pop[0][0]
+
+    return scored_pop[0][1], scored_pop[0][0]
+
 flights = {}
 for line in file(working_path + 'schedule.txt'):
     origin,dest,depart,arrive,price=line.strip().split(',')
@@ -123,6 +221,9 @@ for line in file(working_path + 'schedule.txt'):
 # printschedule(s)
 # print schedulecost(s)
 domain= [11, 12, 6, 5, 10, 8, 7, 8]
-sol, cost = hill_climb_optimization(domain, schedulecost)
+# sol, cost = hill_climb_optimization(domain, schedulecost)
+# sol, cost = generic_simulated_annealing_optimization(domain, schedulecost)
+sol, cost = genetic_optimization(domain, schedulecost)
 print "Cost = " + str(cost)
 printschedule(sol)
+#35570 - annealing
