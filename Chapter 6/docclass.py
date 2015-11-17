@@ -182,8 +182,8 @@ class fisherclassifier(classifier):
                 max=p
         return best
 
-cl = fisherclassifier(getwords)
-sampletrain(cl)
-print cl.classify('quick rabbit', default='unknown')
-print cl.classify('quick money', default='unknown')
-print cl.classify('water', default='unknown')
+# cl = fisherclassifier(getwords)
+# sampletrain(cl)
+# print cl.classify('quick rabbit', default='unknown')
+# print cl.classify('quick money', default='unknown')
+# print cl.classify('water', default='unknown')
