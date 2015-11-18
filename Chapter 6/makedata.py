@@ -20,5 +20,5 @@ def take_from_dataset(number=1000, skip=0, input_file_name='avito_train.tsv', ou
                 else:
                     count += 1
 
-# take_from_dataset()
-take_from_dataset(skip=1000, output_file_name='test.csv')
+# take_from_dataset(number=50000)
+take_from_dataset(skip=50000, output_file_name='test.csv')
