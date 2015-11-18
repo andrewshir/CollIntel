@@ -114,7 +114,7 @@ class naivebayes(classifier):
         max=0.0
         for cat in self.categories( ):
             probs[cat]=self.prob(item,cat)
-            if probs[cat]>max:
+            if probs[cat]>=max:
                 max=probs[cat]
                 best=cat
 
