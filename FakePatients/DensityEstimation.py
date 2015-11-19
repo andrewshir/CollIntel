@@ -74,4 +74,10 @@ def train_age(data, show_chart=False):
             plt.show()
     return result
 
-ages_estimator = train_age(data, True)
+def calc_day_patients_prob():
+    return fp.get_patients_freq(raw_data)
+
+# ages_estimator = train_age(data, True)
+probs = calc_day_patients_prob()
+
+print probs[(2, 3, '050')]
