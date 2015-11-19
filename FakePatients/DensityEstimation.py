@@ -76,7 +76,8 @@ def train_age(data, show_chart=False):
 def calc_day_patients_prob():
     return fp.get_patients_freq(raw_data)
 
-def train_admit_number(data, show_chart=False):
+
+def train_admit_count(data, show_chart=False):
     """Train patient admittance number for triplet (sex, age, sline)"""
     freq = {}
     for row in data:
@@ -104,23 +105,23 @@ def train_admit_number(data, show_chart=False):
         result[tuple] = kdef
 
         if show_chart:
-            print "SL=%s" % sline
+            # print "Sex=%d, Age=%d, SL=%s" % (sex, age, sline)
             # print_freq(ages)
             samples = kdef(len(train_data)) if len(train_data) < 500 else kdef(500)
             # print_freq(samples)
 
             # hist for train data
             plt.subplot(211)
-            plt.title("Admit numbers train data for SL=%s" %(sline))
+            plt.title("Admit count train data for Sex=%d, Age=%d, SL=%s" % (sex, age, sline))
             plt.ylabel('freq')
-            plt.xlabel('admittance number')
+            plt.xlabel('admittance count')
             plt.hist(train_data)
 
             # estimated density
             plt.subplot(212)
-            plt.title("Estimated density %s" % sline)
+            plt.title("Estimated density Sex=%d, Age=%d, SL=%s" % (sex, age, sline))
             plt.ylabel('freq')
-            plt.xlabel('admittance number')
+            plt.xlabel('admittance count')
             plt.hist(samples)
 
             plt.show()
@@ -128,8 +129,64 @@ def train_admit_number(data, show_chart=False):
     return result
 
 
+def train_rlos(data, show_chart=False):
+    """Train LOS estimator"""
+    """Train patient LOS for triplet (sex, age, sline)"""
+    freq = {}
+    for row in data:
+        sex = int(row["sex"])
+        age = fp.split_age(int(row["age"]))
+        sline = row["sline"]
+        rlos = int(row["rlos"])
+
+        if rlos == 0:
+            print "RLOS equals zero for sex %d, age %d, SL %s" % (sex, age, sline)
+
+        tuple = (sex, age, sline)
+        freq.setdefault(tuple, [])
+        freq[tuple].append(rlos)
+
+    result = {}
+    for tuple, train_data in freq.items():
+        (sex, age, sline) = tuple
+        if len(train_data) < 10:
+            print "Too small training set for sex %d, age %d, SL %s. Data will be skipped. " % tuple
+            continue
+
+        X = np.array([train_data]).transpose()
+        kde = KernelDensity(kernel='tophat', bandwidth=0.5).fit(X)
+        kdef = lambda size: [round(l[0]) for l in kde.sample(size).tolist()]
+        result[tuple] = kdef
+
+        if show_chart:
+            # print "Sex=%d, Age=%d, SL=%s" % (sex, age, sline)
+            # print_freq(ages)
+            samples = kdef(len(train_data)) if len(train_data) < 500 else kdef(500)
+            # print_freq(samples)
+
+            # hist for train data
+            plt.subplot(211)
+            plt.title("RLOS train data for Sex=%d, Age=%d, SL=%s" % (sex, age, sline))
+            plt.ylabel('freq')
+            plt.xlabel('RLOS')
+            plt.hist(train_data)
+
+            # estimated density
+            plt.subplot(212)
+            plt.title("Estimated density Sex=%d, Age=%d, SL=%s" % (sex, age, sline))
+            plt.ylabel('freq')
+            plt.xlabel('RLOS')
+            plt.hist(samples)
+
+            plt.show()
+
+    return result
+
+
+
 # ages_estimator = train_age(data, True)
 # probs = calc_day_patients_prob()
 # print probs[(2, 3, '050')]
-admit_number_estimator = train_admit_number(data, True)
+# admit_count_estimator = train_admit_count(data, True)
+rlos_estimator = train_rlos(data, True)
 
