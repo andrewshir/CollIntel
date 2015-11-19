@@ -102,7 +102,7 @@ class Repository(object):
             slinef = row[14]
             rlos = row[5]
 
-            if sline is None:
+            if slinef is None:
                 continue
             if len(admit_date) == 0:
                 continue

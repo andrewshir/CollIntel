@@ -57,6 +57,50 @@ def load_mapping(mapping_file="Mapping.csv"):
             result[drg] = service_line
         return result
 
+def change_to_dict(data):
+    """Changes row in data to dict"""
+    result = []
+    for row in data:
+        row_dict = {}
+
+        row_dict["period"] = row[0]
+        row_dict["visit"] = row[1]
+        row_dict["admit"] = row[2]
+        row_dict["dis"] = row[3]
+        row_dict["blos"] = row[4]
+        row_dict["rlos"] = row[5]
+        row_dict["stay"] = row[6]
+        row_dict["drg"] = row[7]
+        row_dict["soi"] = row[8]
+        row_dict["age"] = row[9]
+        row_dict["sex"] = row[10]
+        row_dict["isdied"] = row[11]
+        row_dict["ddx_total"] = row[12]
+        row_dict["proc_total"] = row[13]
+        row_dict["sline"] = row[14]
+        result.append(row_dict)
+    return result
+
+def filter_incomplete_data(raw_data):
+    """Filter out incomplete (e.g. empty admit date, empty SL) rows from the dataset"""
+    result = []
+    for row in raw_data:
+        admit_date = row[2]
+        rlos = row[5]
+        slinef = row[14]
+
+        if slinef is None:
+            continue
+        if len(admit_date) == 0:
+            continue
+
+        if len(rlos) == 0:
+            continue
+
+        result.append(row)
+    return result
+
+
 def load_data_with_sline(data_file = "FakePatients.csv"):
     """Loads data as list of tuples, adde sline at the end"""
 
@@ -65,6 +109,7 @@ def load_data_with_sline(data_file = "FakePatients.csv"):
     print "Load DRG data from %s" % file
 
     data = []
+    missed_drg = set()
 
     with open(file, "rb") as f:
         reader = csv.reader(f)
@@ -91,9 +136,11 @@ def load_data_with_sline(data_file = "FakePatients.csv"):
 
             if drg in mapping:
                 sline = mapping[drg]
+            else:
+                missed_drg.add(drg)
 
             data.append((period, visit, admit, dis, blos, rlos, stay, drg, soi, age, sex, isdied, ddx_total, proc_total, sline))
-    return data
+    return data, missed_drg
 
 def get_season_data(dic_freq_by_days):
     seasons = [{}, {}, {}, {}]
