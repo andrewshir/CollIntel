@@ -57,7 +57,6 @@ def train_age(data, show_chart=False):
             print_freq(samples)
 
             # hist for train data
-            # plt.figure(1)
             plt.subplot(211)
             plt.title("Age train data for SL=%s" %(sline))
             plt.ylabel('freq')
@@ -77,7 +76,60 @@ def train_age(data, show_chart=False):
 def calc_day_patients_prob():
     return fp.get_patients_freq(raw_data)
 
-# ages_estimator = train_age(data, True)
-probs = calc_day_patients_prob()
+def train_admit_number(data, show_chart=False):
+    """Train patient admittance number for triplet (sex, age, sline)"""
+    freq = {}
+    for row in data:
+        sex = int(row["sex"])
+        age = fp.split_age(int(row["age"]))
+        sline = row["sline"]
+        admit = row["admit"]
 
-print probs[(2, 3, '050')]
+        tuple = (sex, age, sline)
+        freq.setdefault(tuple, {})
+        freq[tuple].setdefault(admit, 0)
+        freq[tuple][admit] += 1
+
+    result = {}
+    for tuple, days in freq.items():
+        (sex, age, sline) = tuple
+        train_data = days.values()
+        if len(train_data) < 10:
+            print "Too small training set for sex %d, age %d, SL %s. Data will be skipped. " % tuple
+            continue
+
+        X = np.array([train_data]).transpose()
+        kde = KernelDensity(kernel='tophat', bandwidth=0.5).fit(X)
+        kdef = lambda size: [round(l[0]) for l in kde.sample(size).tolist()]
+        result[tuple] = kdef
+
+        if show_chart:
+            print "SL=%s" % sline
+            # print_freq(ages)
+            samples = kdef(len(train_data)) if len(train_data) < 500 else kdef(500)
+            # print_freq(samples)
+
+            # hist for train data
+            plt.subplot(211)
+            plt.title("Admit numbers train data for SL=%s" %(sline))
+            plt.ylabel('freq')
+            plt.xlabel('admittance number')
+            plt.hist(train_data)
+
+            # estimated density
+            plt.subplot(212)
+            plt.title("Estimated density %s" % sline)
+            plt.ylabel('freq')
+            plt.xlabel('admittance number')
+            plt.hist(samples)
+
+            plt.show()
+
+    return result
+
+
+# ages_estimator = train_age(data, True)
+# probs = calc_day_patients_prob()
+# print probs[(2, 3, '050')]
+admit_number_estimator = train_admit_number(data, True)
+
