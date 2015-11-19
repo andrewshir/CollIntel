@@ -12,12 +12,14 @@ print "Filter out %d of %d" % (len(raw_data) - len(data), len(raw_data))
 
 
 def train_age(data, show_chart=False):
+    """Train age estimator for each SL"""
     def print_freq(data):
         freq = {}
         length = float(len(data))
         for x in data:
-            freq.setdefault(x, 0)
-            freq[x] += 1
+            xcat = fp.split_age(x)
+            freq.setdefault(xcat, 0)
+            freq[xcat] += 1
         for x in sorted(freq.keys()):
             print "%d: %.2f" % (x, round(freq[x]/length, 2)),
         print
@@ -25,7 +27,11 @@ def train_age(data, show_chart=False):
     sline_ages = {}
     for row in data:
         sline = row['sline']
-        age = fp.split_age(int(row["age"]))
+        age = int(row["age"])
+
+        if age <= 0:
+            print "SL=%s has age equals or less than zero (%d). Value is ignored" % (sline, age)
+            continue
 
         sline_ages.setdefault(sline, [])
         sline_ages[sline].append(age)
@@ -39,14 +45,15 @@ def train_age(data, show_chart=False):
     result = {}
     for sline,ages in sline_ages.items():
         X = np.array([ages]).transpose()
-        kde = KernelDensity(kernel='tophat', bandwidth=0.5).fit(X)
-        result[sline] = kde
+        kde = KernelDensity(kernel='tophat', bandwidth=1.0).fit(X)
+        kdef = lambda size: [round(l[0]) for l in kde.sample(size).tolist()]
+        result[sline] = kdef
 
         if show_chart:
 
             print "SL=%s" % sline
             print_freq(ages)
-            samples = [round(l[0]) for l in kde.sample(len(ages) if len(ages) < 500 else 500).tolist()]
+            samples = kdef(len(ages)) if len(ages) < 500 else kdef(500)
             print_freq(samples)
 
             # hist for train data
@@ -55,14 +62,14 @@ def train_age(data, show_chart=False):
             plt.title("Age train data for SL=%s" %(sline))
             plt.ylabel('freq')
             plt.xlabel('age category')
-            plt.hist(ages, bins=4)
+            plt.hist(ages)
 
             # estimated density
             plt.subplot(212)
             plt.title("Estimated density %s" % sline)
             plt.ylabel('freq')
             plt.xlabel('age category')
-            plt.hist(samples, bins=4)
+            plt.hist(samples)
 
             plt.show()
     return result
