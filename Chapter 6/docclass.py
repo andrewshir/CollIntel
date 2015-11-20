@@ -147,7 +147,10 @@ class fisherclassifier(classifier):
         p=1
         features=self.getfeatures(item)
         for f in features:
-            p*=(self.weightedprob(f,cat,self.cprob))
+            p*=(self.weightedprob(f,cat,self.fprob))
+
+        if p == 0.0:
+            return 0.0
 
         # Take the natural log and multiply by -2
         fscore=-2*math.log(p)
