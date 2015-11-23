@@ -6,6 +6,7 @@ import numpy as np
 import random
 import csv
 from datetime import timedelta
+import math
 
 training_threshold = 10
 alert_count = 50
@@ -375,8 +376,129 @@ def show_patient_chart2(model, history):
     ax.legend((rects1[0], rects2[0]), ("Model", "History"))
     plt.show()
 
+def calculate_distance(fr1, fr2):
+    """Calculates distance between 2 freqs dictionaries"""
+    keys = list(set(fr1.keys() + fr2.keys()))
+    sum = 0
+    for key in keys:
+        v1 = fr1[key] if key in fr1 else 0
+        v2 = fr2[key] if key in fr2 else 0
+        sum += abs(v1-v2)
+    return sum
 
-def build_charts(generated_data):
+def build_chart(generated_data):
+    """Builds charts of freq differences between average model and historical data"""
+    freqs_model = {}
+    freqs_history = {}
+    for row in generated_data:
+        id = row[0]
+        sex = row[2]
+        age = row[3]
+        sline = row[4]
+        rlos = row[5]
+        tuple = (sex, fp.split_age(age), sline)
+
+        if id[0] == 'M':
+            freqs_model.setdefault(tuple, {})
+            freqs_model[tuple].setdefault(rlos, {})
+            freqs_model[tuple][rlos].setdefault(id, 0)
+            freqs_model[tuple][rlos][id] += 1
+        else:
+            freqs_history.setdefault(tuple, {})
+            freqs_history[tuple].setdefault(rlos, {})
+            freqs_history[tuple][rlos].setdefault(id, 0)
+            freqs_history[tuple][rlos][id] += 1
+
+    # calculate average freqs
+    freqs_avg_model = {}
+    freqs_avg_history = {}
+    for tuple in freqs_model.keys():
+        rt = {}
+        for rlos in freqs_model[tuple].keys():
+            d = freqs_model[tuple][rlos]
+            rt[rlos] = sum(d.values()) / float(len(d))
+        freqs_avg_model[tuple] = rt
+    for tuple in freqs_history.keys():
+        rt = {}
+        for rlos in freqs_history[tuple].keys():
+            d = freqs_history[tuple][rlos]
+            rt[rlos] = sum(d.values()) / float(len(d))
+        freqs_avg_history[tuple] = rt
+
+    plot_data = {}
+    for tuple in freqs_avg_model.keys():
+        fm = freqs_avg_model[tuple]
+        if tuple not in freqs_avg_history:
+            print "Cannot find history data to compare with model for sex: %d, age %d, sline %s" % tuple
+        fh = freqs_avg_history[tuple]
+        plot_data[tuple] = calculate_distance(fm, fh)
+
+    plt.title("Difference between average modeled and historic data")
+    plt.plot(sorted(plot_data.values()), 'ro')
+    plt.show()
+
+def build_freq_charts(generated_data):
+    """Builds freqs charts for sex and age"""
+    m_sex = {}
+    m_age = {}
+    h_sex = {}
+    h_age = {}
+    for row in generated_data:
+        id = row[0]
+        sex = row[2]
+        age = row[3]
+        sline = row[4]
+        if id[0] == 'M':
+            m_sex.setdefault(sex, 0)
+            m_sex[sex] += 1
+
+            m_age.setdefault(age, 0)
+            m_age[age] += 1
+        else:
+            h_sex.setdefault(sex, 0)
+            h_sex[sex] += 1
+
+            h_age.setdefault(age, 0)
+            h_age[age] += 1
+
+    keys = list(set(m_sex.keys() + h_sex.keys()))
+    keys.sort()
+    model = []
+    history = []
+    for key in keys:
+        model.append(m_sex[key] if key in m_sex else 0)
+        history.append(h_sex[key] if key in h_sex else 0)
+
+    N = len(model)
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.35       # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, model, width, color='r')
+    rects2 = ax.bar(ind + width, history, width, color='y')
+    ax.legend((rects1[0], rects2[0]), ("Model", "History"))
+    plt.title("Sex")
+    plt.show()
+
+    keys = list(set(m_age.keys() + h_age.keys()))
+    keys.sort()
+    model = []
+    history = []
+    for key in keys:
+        model.append(m_age[key] if key in m_age else 0)
+        history.append(h_age[key] if key in h_age else 0)
+
+    N = len(model)
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.35       # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, model, width, color='r')
+    rects2 = ax.bar(ind + width, history, width, color='y')
+    ax.legend((rects1[0], rects2[0]), ("Model", "History"))
+    plt.title("Age")
+    plt.show()
+
+
+def build_simple_chart(generated_data):
     rlos_model = []
     rlos_hist = []
     for row in generated_data:
@@ -411,4 +533,5 @@ output = predict_patient_flow(
     days=30)
 
 # save_csv(output, filename='demo3_3.csv')
-build_charts(output)
+# build_chart(output)
+build_freq_charts(output)
