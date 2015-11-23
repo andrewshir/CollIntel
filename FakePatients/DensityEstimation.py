@@ -163,7 +163,7 @@ def train_admit_count(data, show_chart=False):
         X = np.array([train_data]).transpose()
         kde = KernelDensity(kernel='tophat', bandwidth=0.5).fit(X)
         kdef = lambda size: [int(round(l[0])) for l in kde.sample(size).tolist()]
-        result[tuple] = kdef
+        result[tuple] = kde
 
         if show_chart:
             # print "Sex=%d, Age=%d, SL=%s" % (sex, age, sline)
@@ -218,7 +218,7 @@ def train_rlos(data, show_chart=False):
         X = np.array([train_data]).transpose()
         kde = KernelDensity(kernel='tophat', bandwidth=0.5).fit(X)
         kdef = lambda size: [round(l[0]) for l in kde.sample(size).tolist()]
-        result[tuple] = kdef
+        result[tuple] = kde
 
         if show_chart:
             # print "Sex=%d, Age=%d, SL=%s" % (sex, age, sline)
@@ -307,17 +307,20 @@ def predict_patient_flow(ages_estimator, admit_count_estimator, rlos_estimator, 
 
                 # model patient flow
                 for it in xrange(model_count):
-                    rlos_flow_func = lambda: rlos_estimator[tuple](100)
+                    rlos_flow_func = lambda: [int(round(l[0]))
+                                              for l in rlos_estimator[tuple].sample(100).tolist()]
                     rlos_flow = rlos_flow_func()
                     age_flow_func = lambda: [a for a in ages_estimator[sline](500) if fp.split_age(a) == age]
                     age_flow = recall_if_empty(age_flow_func)
-                    admit_count_func = lambda: admit_count_estimator[tuple](days)
-                    admit_count_func = lambda: admit_count_estimator[tuple](days)
+                    admit_count_func = lambda: [int(round(l[0]))
+                                                for l in admit_count_estimator[tuple].sample(100).tolist()]
                     admit_flow = admit_count_func()
 
                     for iday in xrange(days):
                         if day_patients_prob[tuple] == 1.0 or random.random() <= day_patients_prob[tuple]:
                             pat_count = admit_flow.pop()
+                            if len(admit_flow) == 0:
+                                admit_flow = admit_count_func()
                             for p in xrange(pat_count):
                                 id = "M%02d (%d, %d, %s)" % (model_index, sex, age, sline)
                                 result.append(
@@ -341,6 +344,52 @@ def save_csv(generated_data, filename='demo.csv'):
             writer.writerow(row)
 
 
+def show_patient_chart2(model, history):
+    """Build freq chart for model and historical data"""
+    freq_model = {}
+    freq_hist = {}
+    for x in model:
+        freq_model.setdefault(x, 0)
+        freq_model[x] += 1
+
+    for x in history:
+        freq_hist.setdefault(x, 0)
+        freq_hist[x] += 1
+
+    keys = list(set(freq_model.keys() + freq_hist.keys()))
+    keys.sort()
+
+    model = []
+    history = []
+    for key in keys:
+        model.append(0 if key not in freq_model else freq_model[key])
+        history.append(0 if key not in freq_hist else freq_hist[key])
+
+    N = len(keys)
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.35       # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, model, width, color='r')
+    rects2 = ax.bar(ind + width, history, width, color='y')
+
+    ax.legend((rects1[0], rects2[0]), ("Model", "History"))
+    plt.show()
+
+
+def build_charts(generated_data):
+    rlos_model = []
+    rlos_hist = []
+    for row in generated_data:
+        id = row[0]
+        rlos = row[5]
+        if id[0] == 'M':
+            rlos_model.append(rlos)
+        else:
+            rlos_hist.append(rlos)
+
+    show_patient_chart2(model=rlos_model, history=rlos_hist)
+
+
 # ages_estimator = train_age(data, True)
 # probs = calc_day_patients_prob()
 # # print probs[(2, 3, '050')]
@@ -357,6 +406,9 @@ output = predict_patient_flow(
     rlos_estimator,
     probs,
     sline_list=['050'],
+    model_count=5,
+    history_count=5,
     days=30)
 
-save_csv(output, filename='demo3.csv')
+# save_csv(output, filename='demo3_3.csv')
+build_charts(output)
