@@ -527,11 +527,11 @@ output = predict_patient_flow(
     admit_count_estimator,
     rlos_estimator,
     probs,
-    sline_list=['050'],
+    sline_list=['050', '390', '132'],
     model_count=5,
     history_count=5,
     days=30)
 
-# save_csv(output, filename='demo3_3.csv')
-# build_chart(output)
-build_freq_charts(output)
+# save_csv(output, filename='demo3.csv')
+build_chart(output)
+# build_freq_charts(output)
