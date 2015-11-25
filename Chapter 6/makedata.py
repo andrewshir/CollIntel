@@ -43,6 +43,6 @@ def show_top_rows(f, top=10, tsv=True):
 # show_top_rows('avito_test.csv', tsv=False)
 
 
-# take_from_dataset(count=1000000)
-take_from_dataset(skip=1000000, count=1000000, output_file_name='test.csv')
+# take_from_dataset(count=50000)
+take_from_dataset(skip=50000, count=1000, output_file_name='test.csv')
 # take_from_dataset(count=None, input_file_name='avito_test.tsv', output_file_name='avito_test.csv')

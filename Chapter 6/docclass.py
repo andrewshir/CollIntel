@@ -1,6 +1,16 @@
+# coding: utf-8
 __author__ = 'Andrew'
 import re
 import math
+import nltk.corpus
+from nltk import SnowballStemmer
+
+stopwords=frozenset(word for word in nltk.corpus.stopwords.words("russian"))
+stemmer = SnowballStemmer('russian')
+engChars = [ord(char) for char in u"cCyoOBaAKpPeE"]
+rusChars = [ord(char) for char in u"сСуоОВаАКрРеЕ"]
+eng_rusTranslateTable = dict(zip(engChars, rusChars))
+rus_engTranslateTable = dict(zip(rusChars, engChars))
 
 def getwords(doc):
     splitter = re.compile('\\W*')
@@ -8,6 +18,32 @@ def getwords(doc):
     words = [s.lower() for s in splitter.split(doc) if len(s)>2 and len(s)<20]
 
     # return the unique set of words only
+    return dict((w, 1) for w in words)
+
+def correctWord (w):
+    """ Corrects word by replacing characters with written similarly depending on which language the word.
+        Fraudsters use this technique to avoid detection by anti-fraud algorithms."""
+
+    if len(re.findall(ur"[а-я]",w))>len(re.findall(ur"[a-z]",w)):
+        return w.translate(eng_rusTranslateTable)
+    else:
+        return w.translate(rus_engTranslateTable)
+
+def getwords_avito(text, stemmRequired = True, correctWordRequired = True):
+    """ Splits the text into words, discards stop words and applies stemmer.
+    Parameters
+    ----------
+    text : str - initial string
+    stemmRequired : bool - flag whether stemming required
+    correctWordRequired : bool - flag whether correction of words required
+    """
+
+    cleanText = re.sub(u'[^a-zа-я0-9]', ' ', text.lower())
+    if correctWordRequired:
+        words = [correctWord(w) if not stemmRequired or re.search("[0-9a-z]", w) else stemmer.stem(correctWord(w)) for w in cleanText.split() if len(w)>1 and w not in stopwords]
+    else:
+        words = [w if not stemmRequired or re.search("[0-9a-z]", w) else stemmer.stem(w) for w in cleanText.split() if len(w)>1 and w not in stopwords]
+
     return dict((w, 1) for w in words)
 
 def sampletrain(cl):
@@ -108,7 +144,7 @@ class naivebayes(classifier):
         docprob=self.docprob(item,cat)
         return docprob*catprob
 
-    def classify(self,item,default=None):
+    def classify(self, item, default=None, target_cat=None):
         probs={}
         # Find the category with the highest probability
         max=0.0
@@ -122,7 +158,7 @@ class naivebayes(classifier):
         for cat in probs:
             if cat==best: continue
             if probs[cat]*self.getthreshold(best) > probs[best]: return default
-        return best
+        return best, max if best == target_cat else -max
 
 
 class fisherclassifier(classifier):
@@ -147,7 +183,7 @@ class fisherclassifier(classifier):
         p=1
         features=self.getfeatures(item)
         for f in features:
-            p*=(self.weightedprob(f,cat,self.fprob))
+            p*=(self.weightedprob(f,cat,self.cprob))
 
         if p == 0.0:
             return 0.0
@@ -173,17 +209,18 @@ class fisherclassifier(classifier):
         if cat not in self.minimums: return 0
         return self.minimums[cat]
 
-    def classify(self,item,default=None):
+    def classify(self,item,default=None, target_cat=None):
         # Loop through looking for the best result
         best=default
         max=0.0
-        for c in self.categories( ):
+        for c in self.categories():
             p=self.fisherprob(item,c)
             # Make sure it exceeds its minimum
             if p>self.getminimum(c) and p>max:
                 best=c
                 max=p
-        return best
+
+        return best, max if target_cat == best else -max
 
 # cl = fisherclassifier(getwords)
 # sampletrain(cl)
