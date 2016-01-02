@@ -118,6 +118,17 @@ class classifier:
         bp=((weight*ap)+(totals*basicprob))/(weight+totals)
         return bp
 
+    def get_top_features(self, top=10):
+        freq = {}
+        for f in self.fc.keys():
+            for cat in self.categories():
+                freq.setdefault(cat, {})
+                if cat in self.fc[f]:
+                    freq[cat][f] = (f, self.fc[f][cat])
+        result = {}
+        for cat in self.categories():
+            result[cat] = sorted(freq[cat].values(), reverse=True, key=lambda (f,x):x)[:top]
+        return result
 
 class naivebayes(classifier):
     def __init__(self, getfeatures):
