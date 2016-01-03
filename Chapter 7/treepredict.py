@@ -206,6 +206,51 @@ def prune(tree,mingain):
             tree.tb, tree.fb = None, None
             tree.results = uniquecounts(tb+fb)
 
+
+def mdclassify(observation, tree):
+    if tree.results != None:
+        return tree.results
+    else:
+        v = observation[tree.col]
+
+        if v is None:
+            tb = mdclassify(observation, tree.tb)
+            fb = mdclassify(observation, tree.fb)
+
+            tbc = sum([v for k, v in tb.items()])
+            fbc = sum([v for k, v in fb.items()])
+
+            tbp = float(tbc) / (tbc + fbc)
+            fbp = float(fbc) / (tbc + fbc)
+
+            result = {}
+            for k,v in tb.items():
+                result[k] = v*tbp
+            for k,v in fb.items():
+                result[k] = v*fbp
+            return result
+        else:
+            branch = None
+            if isinstance(v, int) or isinstance(v, float):
+                if v >= tree.value:
+                    branch = tree.tb
+                else:
+                    branch = tree.fb
+            else:
+                if v == tree.value:
+                    branch = tree.tb
+                else:
+                    branch = tree.fb
+            return mdclassify(observation, branch)
+
+
+def variance(rows):
+    if len(rows)==0: return 0
+    data=[float(row[len(row)-1]) for row in rows]
+    mean=sum(data)/len(data)
+    variance=sum([(d-mean)**2 for d in data])/len(data)
+    return variance
+
 # print gini_impurity(my_data)
 # print entropy(my_data)
 #
@@ -221,9 +266,12 @@ tree = buildtree(my_data)
 # drawtree(tree, jpeg='c:\\temp\\treeview.jpg')
 # print classify(['(direct)','USA','yes',5],tree)
 
-prune(tree,0.1)
-printtree(tree)
+# prune(tree,0.1)
+# printtree(tree)
+#
+# prune(tree, 1)
+# printtree(tree)
 
-prune(tree, 1)
-printtree(tree)
+print mdclassify(['google',None,'yes',None],tree)
+print mdclassify(['google','France',None,None],tree)
 
