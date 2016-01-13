@@ -85,6 +85,32 @@ def gender_pclass_fare_age_model(v):
         else:
             return 1
 
-run(predictor=gender_model)
-run(predictor=gender_pclass_fare_model)
+
+def gender_pclass_fare_age_model_title(v):
+    if v['Sex'] == 'male':
+        if v['Pclass'] == 1:
+            if v['Age'] is not None and v['Age'] < 18:
+                return 1
+            else:
+                return 0
+        elif v['Pclass'] == 2:
+            if 'Master.' in v['Name']:
+                return 1
+            else:
+                return 0
+        else:
+            return 0
+    else:
+        if v['Pclass'] == 3:
+            if v['Fare'] > 20.0:
+                return 0
+            else:
+                return 1
+        else:
+            return 1
+
+
+# run(predictor=gender_model)
+# run(predictor=gender_pclass_fare_model)
 run(predictor=gender_pclass_fare_age_model)
+run(predictor=gender_pclass_fare_age_model_title)
