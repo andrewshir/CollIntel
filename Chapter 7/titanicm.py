@@ -88,6 +88,7 @@ def gender_pclass_fare_age_model(v):
 
 def gender_pclass_fare_age_model_title(v):
     if v['Sex'] == 'male':
+        # men
         if v['Pclass'] == 1:
             if v['Age'] is not None and v['Age'] < 18:
                 return 1
@@ -101,6 +102,7 @@ def gender_pclass_fare_age_model_title(v):
         else:
             return 0
     else:
+        # women
         if v['Pclass'] == 3:
             if v['Fare'] > 20.0:
                 return 0
