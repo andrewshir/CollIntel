@@ -9,7 +9,8 @@ def traverse_file(row_f, header_f, input_csv_file, output_csv_file, correction):
             writer = csv.writer(f_output)
 
             header = reader.next()
-            header_f(header, correction)
+            if header_f is not None:
+                header_f(header, correction)
             writer.writerow(header)
 
             for row in reader:
@@ -52,6 +53,28 @@ def build_notalone(input_csv_file='train.csv', output_csv_file='train_aug.csv', 
     traverse_file(row_f, header_f, input_csv_file, output_csv_file, correction)
 
 
+def build_family(input_csv_file='train.csv', output_csv_file='train_aug.csv', correction=0):
+    def row_fill_f(row, correction):
+        name = row[3-correction]
+        lastname = name[0:name.index(',')]
+        d.setdefault(lastname, 0)
+        d[lastname] += 1
+
+    def row_calc_f(row, correction):
+        name = row[3-correction]
+        lastname = name[0:name.index(',')]
+        row.append(str(d[lastname]-1) if lastname in d else '')
+
+    def header_f(header, correction):
+        header.append('Fmemb')
+
+    d = {}
+    temp_file = 'temp.csv'
+    traverse_file(row_fill_f, header_f, input_csv_file, temp_file, correction)
+    traverse_file(row_calc_f, None, temp_file, output_csv_file, correction)
+
+
 parse_title()
-build_notalone(input_csv_file='train_aug.csv', output_csv_file='train_aug1.csv')
+# build_notalone(input_csv_file='train_aug.csv', output_csv_file='train_aug1.csv')
+build_family(input_csv_file='train_aug1.csv', output_csv_file='train_aug2.csv')
 # parse_title(input_csv_file='test.csv', output_csv_file='test_aug.csv', correction=1)
