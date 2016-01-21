@@ -2,6 +2,7 @@ import csv
 
 work_path = 'C:\\Users\Andrew\\Source\\Repos\\CollIntel\\Chapter 7\\'
 
+
 def traverse_file(row_f, header_f, input_csv_file, output_csv_file, correction):
     with open(work_path + input_csv_file, 'rb') as f_input:
         reader = csv.reader(f_input)
@@ -17,7 +18,8 @@ def traverse_file(row_f, header_f, input_csv_file, output_csv_file, correction):
                 row_f(row, correction)
                 writer.writerow(row)
 
-def parse_title(input_csv_file='train.csv', output_csv_file='train_aug.csv', correction=0):
+
+def build_title(input_csv_file='train.csv', output_csv_file='train_aug.csv', correction=0):
     def row_f(row, correction):
         name = row[3-correction]
         title = 0
@@ -56,13 +58,15 @@ def build_notalone(input_csv_file='train.csv', output_csv_file='train_aug.csv', 
 def build_family(input_csv_file='train.csv', output_csv_file='train_aug.csv', correction=0):
     def row_fill_f(row, correction):
         name = row[3-correction]
-        lastname = name[0:name.index(',')]
+        coma_index = name.find(',')
+        lastname = name if coma_index == -1 else name[0:coma_index]
         d.setdefault(lastname, 0)
         d[lastname] += 1
 
     def row_calc_f(row, correction):
         name = row[3-correction]
-        lastname = name[0:name.index(',')]
+        coma_index = name.find(',')
+        lastname = name if coma_index == -1 else name[0:coma_index]
         row.append(str(d[lastname]-1) if lastname in d else '')
 
     def header_f(header, correction):
@@ -74,7 +78,11 @@ def build_family(input_csv_file='train.csv', output_csv_file='train_aug.csv', co
     traverse_file(row_calc_f, None, temp_file, output_csv_file, correction)
 
 
-parse_title()
+# build_title()
+# build_title(input_csv_file='test.csv', output_csv_file='test_aug.csv', correction=1)
+
 # build_notalone(input_csv_file='train_aug.csv', output_csv_file='train_aug1.csv')
-build_family(input_csv_file='train_aug1.csv', output_csv_file='train_aug2.csv')
-# parse_title(input_csv_file='test.csv', output_csv_file='test_aug.csv', correction=1)
+build_notalone(input_csv_file='test_aug.csv', output_csv_file='test_aug1.csv', correction=1)
+
+# build_family(input_csv_file='train_aug1.csv', output_csv_file='train_aug2.csv')
+build_family(input_csv_file='test_aug1.csv', output_csv_file='test_aug2.csv', correction=1)
