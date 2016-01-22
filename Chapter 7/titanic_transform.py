@@ -78,11 +78,11 @@ def build_family(input_csv_file='train.csv', output_csv_file='train_aug.csv', co
     traverse_file(row_calc_f, None, temp_file, output_csv_file, correction)
 
 
-# build_title()
-# build_title(input_csv_file='test.csv', output_csv_file='test_aug.csv', correction=1)
+build_title()
+build_title(input_csv_file='test.csv', output_csv_file='test_aug.csv', correction=1)
 
 # build_notalone(input_csv_file='train_aug.csv', output_csv_file='train_aug1.csv')
-build_notalone(input_csv_file='test_aug.csv', output_csv_file='test_aug1.csv', correction=1)
+# build_notalone(input_csv_file='test_aug.csv', output_csv_file='test_aug1.csv', correction=1)
 
 # build_family(input_csv_file='train_aug1.csv', output_csv_file='train_aug2.csv')
-build_family(input_csv_file='test_aug1.csv', output_csv_file='test_aug2.csv', correction=1)
+# build_family(input_csv_file='test_aug1.csv', output_csv_file='test_aug2.csv', correction=1)
