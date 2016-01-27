@@ -126,5 +126,7 @@ def makeLaptopDataset():
 
 
 data = makeLaptopDataset()
-print numpredict.knnestimate(data, (8.0, 512.0, 15.0, 10000.0))
+print 'Price=', numpredict.knnestimate(data, (8.0, 512.0, 15.0, 10000.0))
+print 'Price=', numpredict.knnestimate(data, (8.0, 256.0, 15.0, 10000.0))
+print 'Price=', numpredict.knnestimate(data, (8.0, 256.0, 13.0, 10000.0))
 
