@@ -2,6 +2,7 @@ import httplib
 import ebay
 from xml.dom.minidom import parse, parseString, Node
 from ebaypredict2 import getItem
+import numpredict
 
 
 devKey = ebay.devKey
@@ -124,7 +125,6 @@ def makeLaptopDataset():
     return result
 
 
-# print doSearch('laptop', categoryID=177)[15]
 data = makeLaptopDataset()
-print data
+print numpredict.knnestimate(data, (8.0, 512.0, 15.0, 10000.0))
 

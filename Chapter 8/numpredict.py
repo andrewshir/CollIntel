@@ -171,29 +171,29 @@ def knn1(d, v):
 def knn3(d, v):
     return knnestimate(d, v, k=3)
 
-data = wineset2()
-
-scales = [1, 1, 1, 1]
-print scales
-sdata = rescale(data, scales)
-print crossvalidate(knn3, sdata)
-print crossvalidate(knn3, sdata)
-print
-
-scales = [8, 1, 18, 16]
-print scales
-sdata = rescale(data, scales)
-print crossvalidate(knn3, sdata)
-print crossvalidate(knn3, sdata)
-print
-
-
-costf = createcostfunction(knnestimate, data)
-weightdomain = [20] * 4
-scales, value = optimization.simulated_annealing_optimization(weightdomain, costf)
-print scales
-sdata = rescale(data, scales)
-print crossvalidate(knn3, sdata)
-print crossvalidate(knn3, sdata)
-print
+# data = wineset2()
+#
+# scales = [1, 1, 1, 1]
+# print scales
+# sdata = rescale(data, scales)
+# print crossvalidate(knn3, sdata)
+# print crossvalidate(knn3, sdata)
+# print
+#
+# scales = [8, 1, 18, 16]
+# print scales
+# sdata = rescale(data, scales)
+# print crossvalidate(knn3, sdata)
+# print crossvalidate(knn3, sdata)
+# print
+#
+#
+# costf = createcostfunction(knnestimate, data)
+# weightdomain = [20] * 4
+# scales, value = optimization.simulated_annealing_optimization(weightdomain, costf)
+# print scales
+# sdata = rescale(data, scales)
+# print crossvalidate(knn3, sdata)
+# print crossvalidate(knn3, sdata)
+# print
 
