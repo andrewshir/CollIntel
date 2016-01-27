@@ -50,6 +50,15 @@ def wineset2():
     return rows
 
 
+def wineset3():
+    rows = wineset1()
+    for row in rows:
+        if random() < 0.5:
+            # Wine was bought at a discount store
+            row['result'] *= 0.6
+    return rows
+
+
 def euclidean(v1, v2):
     sum = 0.0
     for i in xrange(len(v1)):
@@ -164,13 +173,27 @@ def knn3(d, v):
 
 data = wineset2()
 
-# scales = [8, 1, 18, 16]
+scales = [1, 1, 1, 1]
+print scales
+sdata = rescale(data, scales)
+print crossvalidate(knn3, sdata)
+print crossvalidate(knn3, sdata)
+print
+
+scales = [8, 1, 18, 16]
+print scales
+sdata = rescale(data, scales)
+print crossvalidate(knn3, sdata)
+print crossvalidate(knn3, sdata)
+print
+
 
 costf = createcostfunction(knnestimate, data)
 weightdomain = [20] * 4
 scales, value = optimization.simulated_annealing_optimization(weightdomain, costf)
-
 print scales
 sdata = rescale(data, scales)
 print crossvalidate(knn3, sdata)
+print crossvalidate(knn3, sdata)
+print
 
