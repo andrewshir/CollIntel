@@ -7,7 +7,7 @@ import numpy as np
 
 def psnr(K, M):
     mse = ((K - M) ** 2).mean()
-    return 20*np.log10(2**8-1 / np.sqrt(mse))
+    return 20*np.log10(1.0 / np.sqrt(mse))
 
 
 working_path = "C:\\Users\\Andrew\\Source\\Repos\\CollIntel\\Yandex\\Week6\\"
@@ -17,7 +17,7 @@ image_rgb = img_as_float(image)
 # join first 2 dimensions
 X = image_rgb.reshape(-1, image_rgb.shape[-1])
 
-for num_clusters in xrange(2, 3):
+for num_clusters in xrange(2, 21):
     print "Number of clusters %d" % num_clusters
 
     c = KMeans(init='k-means++', random_state=241, n_clusters=num_clusters)
