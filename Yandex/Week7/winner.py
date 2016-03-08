@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
-reload(sys)
 import pandas as pd
 from sklearn.cross_validation import KFold
 from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-import time
 import datetime
-import numpy as np
 
 
-sys.setdefaultencoding('utf-8')
 working_path = "C:\\Users\\Andrew\\Source\\Repos\\CollIntel\\Yandex\\Week7\\"
 
 # 1. Считайте таблицу с признаками из файла features.csv с помощью кода, приведенного выше.
@@ -166,8 +161,47 @@ for hero in heroes:
 print "DF shape after:", train_df_log.shape
 
 # 5. Проведите кросс-валидацию для логистической регрессии на новой выборке с подбором лучшего параметра регуляризации.
-exec_logistic_regression()
+# exec_logistic_regression()
+
+
+# 6. Постройте предсказания вероятностей победы команды Radiant для тестовой выборки с помощью лучшей из
+# изученных моделей (лучшей с точки зрения AUC-ROC на кросс-валидации). Убедитесь, что предсказанные вероятности
+# адекватные — находятся на отрезке [0, 1], не совпадают между собой (т.е. что модель не получилась константной).
+def run_best():
+    # train classifier
+    X_log = train_df_log.as_matrix()
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X=X_log)
+    cf = LogisticRegression(penalty='l2', C=0.1)
+    cf.fit(X_scaled, y)
 
 
 
+    test_df = pd.read_csv(working_path + "features_test.csv", index_col='match_id')
+    test_df = test_df.fillna(0)
+    print "DF shape before:", test_df.shape
+    for hero in heroes:
+        # one hero cannot be in both teams
+        test_df['hero_' + str(hero)] = has_r_hero(test_df, hero).apply(lambda x: 1 if x else 0) + \
+                                            has_d_hero(test_df, hero).apply(lambda x: -1 if x else 0)
+    print "DF shape after:", test_df.shape
 
+    del test_df['lobby_type']
+    del test_df['r1_hero']
+    del test_df['r2_hero']
+    del test_df['r3_hero']
+    del test_df['r4_hero']
+    del test_df['r5_hero']
+    del test_df['d1_hero']
+    del test_df['d2_hero']
+    del test_df['d3_hero']
+    del test_df['d4_hero']
+    del test_df['d5_hero']
+
+    X_test = test_df.as_matrix()
+    X_test = scaler.transform(X_test)
+    yprob_pred = cf.predict_proba(X_test)
+    print "Predicted prob MIN:", yprob_pred.min()
+    print "Predicted prob MAX:", yprob_pred.max()
+
+run_best()
