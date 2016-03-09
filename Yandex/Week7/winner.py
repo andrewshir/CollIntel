@@ -80,7 +80,7 @@ def exec_logistic_regression():
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X=X_log)
 
-    for C in [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 20.0]:
+    for C in [0.001, 0.003, 0.005, 0.01, 0.05, 0.1, 0.5, 0.7, 1.0, 1.5, 3.0, 5.0, 10.0]:
         print "C=%f" % C
         cf = LogisticRegression(penalty='l2', C=C)
         start_time = datetime.datetime.now()
@@ -91,7 +91,7 @@ def exec_logistic_regression():
         print "Time elapsed: %s" % time_elapsed
         print
 
-#exec_logistic_regression()
+# exec_logistic_regression()
 
 # 2. Среди признаков в выборке есть категориальные, которые мы использовали как числовые,
 #  что вряд ли является хорошей идеей. Категориальных признаков в этой задаче одиннадцать:
@@ -172,7 +172,7 @@ def run_best():
     X_log = train_df_log.as_matrix()
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X=X_log)
-    cf = LogisticRegression(penalty='l2', C=0.1)
+    cf = LogisticRegression(penalty='l2', C=0.003)
     cf.fit(X_scaled, y)
 
 
@@ -200,7 +200,7 @@ def run_best():
 
     X_test = test_df.as_matrix()
     X_test = scaler.transform(X_test)
-    yprob_pred = cf.predict_proba(X_test)
+    yprob_pred = cf.predict_proba(X_test)[:, 1]
     print "Predicted prob MIN:", yprob_pred.min()
     print "Predicted prob MAX:", yprob_pred.max()
 
