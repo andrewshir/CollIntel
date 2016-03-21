@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 from sklearn.cross_validation import KFold
-from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
+from sklearn.grid_search import GridSearchCV
 import datetime
 
 
@@ -19,6 +19,8 @@ del train_df['tower_status_radiant']
 del train_df['tower_status_dire']
 del train_df['barracks_status_radiant']
 del train_df['barracks_status_dire']
+del train_df['start_time']
+# radiant_win будет удален дальше после формирования вектора y
 
 # 2. Проверьте выборку на наличие пропусков с помощью функции count(), которая для каждого столбца показывает
 # число заполненных значений. Много ли пропусков в данных?
@@ -26,7 +28,7 @@ del train_df['barracks_status_dire']
 # почему их значения могут быть пропущены.
 row_count = train_df.shape[0]
 counts = train_df.count()
-print "Columns with missed values:"
+print "Columns with missed values (total %s rows):" % row_count
 print counts[counts < row_count]
 print
 
@@ -36,7 +38,6 @@ train_df = train_df.fillna(0)
 # 4. Какой столбец содержит целевую переменную? Запишите его название.
 y = train_df['radiant_win'].as_matrix()
 del train_df['radiant_win']
-X = train_df.as_matrix()
 
 # 5. Забудем, что в выборке есть категориальные признаки, и попробуем обучить градиентный бустинг над деревьями на
 # имеющейся матрице "объекты-признаки".
@@ -50,20 +51,31 @@ def exec_gradient_boosting():
     print ' ' * 20, 'APPROACH A: GRADIENT BOOSTING'
     print '*' * 80
 
-    for num_estimators in xrange(5, 50, 5):
-        print "Trees number: %d" % num_estimators
+    X = train_df.as_matrix()
+    tuned_params = {'n_estimators': range(5, 41, 5),
+                    'learning_rate': [0.1, 0.5, 1.0],
+                    'max_depth': [2, 3]}
 
-        cf = GradientBoostingClassifier(n_estimators=num_estimators)
+    cf = GradientBoostingClassifier()
+    gs = GridSearchCV(estimator=cf,
+                      param_grid=tuned_params,
+                      cv=kfold,
+                      scoring='roc_auc')
 
-        start_time = datetime.datetime.now()
-        scores = cross_val_score(estimator=cf, cv=kfold, scoring='roc_auc', X=X, y=y)
-        time_elapsed = datetime.datetime.now() - start_time
+    start_time = datetime.datetime.now()
+    gs.fit(X, y)
+    time_elapsed = datetime.datetime.now() - start_time
+    print "Best hyper-parameter values:"
+    print gs.best_params_
+    print
+    print "Grid scores on development set:"
+    for params, mean_score, scores in gs.grid_scores_:
+        print("%0.6f (+/-%0.03f) for %r"
+              % (mean_score, scores.std() * 2, params))
+    print "Time elapsed: %s" % time_elapsed
+    print
 
-        print "Min score: %5f, Max score: %5f, Mean score: %5f" % (scores.min(), scores.max(), scores.mean())
-        print "Time elapsed: %s" % time_elapsed
-        print
-
-#exec_gradient_boosting()
+exec_gradient_boosting()
 
 
 # 1. Оцените качество логистической регрессии (sklearn.linear_model.LogisticRegression с L2-регуляризацией)
@@ -71,66 +83,83 @@ def exec_gradient_boosting():
 # лучший параметр регуляризации (C).
 train_df_log = train_df.copy()
 
-def exec_logistic_regression():
+def exec_logistic_regression(subtitle=''):
     print '*' * 80
-    print ' ' * 20, 'APPROACH B: LOGISTIC REGRESSION'
+    print ' ' * 20, 'APPROACH B: LOGISTIC REGRESSION %s' % subtitle
     print '*' * 80
 
     X_log = train_df_log.as_matrix()
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X=X_log)
+    X = scaler.fit_transform(X=X_log)
 
-    for C in [0.001, 0.003, 0.005, 0.01, 0.05, 0.1, 0.5, 0.7, 1.0, 1.5, 3.0, 5.0, 10.0]:
-        print "C=%f" % C
-        cf = LogisticRegression(penalty='l2', C=C)
-        start_time = datetime.datetime.now()
-        scores = cross_val_score(estimator=cf, cv=kfold, scoring='roc_auc', X=X_scaled, y=y)
-        time_elapsed = datetime.datetime.now() - start_time
+    tuned_params = {'C': [0.001, 0.003, 0.005, 0.01, 0.1, 0.5, 1.0, 1.5, 5.0]}
+    cf = LogisticRegression(penalty='l2')
+    gs = GridSearchCV(estimator=cf,
+                      param_grid=tuned_params,
+                      cv=kfold,
+                      scoring='roc_auc')
 
-        print "Min score: %5f, Max score: %5f, Mean score: %5f" % (scores.min(), scores.max(), scores.mean())
-        print "Time elapsed: %s" % time_elapsed
-        print
+    start_time = datetime.datetime.now()
+    gs.fit(X, y)
+    time_elapsed = datetime.datetime.now() - start_time
+    print "Best hyper-parameter values:"
+    print gs.best_params_
+    print
+    print "Grid scores on development set:"
+    for params, mean_score, scores in gs.grid_scores_:
+        print("%0.6f (+/-%0.03f) for %r"
+              % (mean_score, scores.std() * 2, params))
+    print "Time elapsed: %s" % time_elapsed
+    print
 
-# exec_logistic_regression()
+exec_logistic_regression()
+
 
 # 2. Среди признаков в выборке есть категориальные, которые мы использовали как числовые,
 #  что вряд ли является хорошей идеей. Категориальных признаков в этой задаче одиннадцать:
 # lobby_type и r1_hero, r2_hero, ..., r5_hero, d1_hero, d2_hero, ..., d5_hero.
 # Уберите их из выборки, и проведите кросс-валидацию для логистической регрессии на новой выборке с подбором
 # лучшего параметра регуляризации.
-del train_df_log['lobby_type']
-del train_df_log['r1_hero']
-del train_df_log['r2_hero']
-del train_df_log['r3_hero']
-del train_df_log['r4_hero']
-del train_df_log['r5_hero']
-del train_df_log['d1_hero']
-del train_df_log['d2_hero']
-del train_df_log['d3_hero']
-del train_df_log['d4_hero']
-del train_df_log['d5_hero']
+def remove_categorial_features(df):
+    del df['lobby_type']
+    del df['r1_hero']
+    del df['r2_hero']
+    del df['r3_hero']
+    del df['r4_hero']
+    del df['r5_hero']
+    del df['d1_hero']
+    del df['d2_hero']
+    del df['d3_hero']
+    del df['d4_hero']
+    del df['d5_hero']
 
-# exec_logistic_regression()
+remove_categorial_features(train_df_log)
+exec_logistic_regression(subtitle='W/O CATEGORIAL')
+
 
 # 3. На предыдущем шаге мы исключили из выборки признаки rM_hero и dM_hero, которые показывают, какие именно герои
 # играли за каждую команду. Это важные признаки — герои имеют разные характеристики, и некоторые из них
 # выигрывают чаще, чем другие. Выясните из данных, сколько различных идентификаторов героев существует в данной игре
-heroes = []
-heroes.extend(train_df['r1_hero'].unique())
-heroes.extend(train_df['r2_hero'].unique())
-heroes.extend(train_df['r3_hero'].unique())
-heroes.extend(train_df['r4_hero'].unique())
-heroes.extend(train_df['r5_hero'].unique())
-heroes.extend(train_df['d1_hero'].unique())
-heroes.extend(train_df['d2_hero'].unique())
-heroes.extend(train_df['d3_hero'].unique())
-heroes.extend(train_df['d4_hero'].unique())
-heroes.extend(train_df['d5_hero'].unique())
-heroes = list(set(heroes))
-heroes.sort()
-print "Heroes identifiers (count=%d):" % len(heroes)
-print heroes
+def get_heroes(df):
+    result = []
+    result.extend(df['r1_hero'].unique())
+    result.extend(df['r2_hero'].unique())
+    result.extend(df['r3_hero'].unique())
+    result.extend(df['r4_hero'].unique())
+    result.extend(df['r5_hero'].unique())
+    result.extend(df['d1_hero'].unique())
+    result.extend(df['d2_hero'].unique())
+    result.extend(df['d3_hero'].unique())
+    result.extend(df['d4_hero'].unique())
+    result.extend(df['d5_hero'].unique())
+    result = list(set(result))
+    result.sort()
+    print "Heroes count: %s" % len(result)
+    # print "Heroes identifiers:"
+    # print result
+    return result
 
+heroes = get_heroes(train_df)
 
 # 4. Воспользуемся подходом "мешок слов" для кодирования информации о героях. Пусть всего в игре имеет N различных
 # героев. Сформируем N признаков, при этом i-й будет равен нулю, если i-й герой не участвовал в матче; единице,
@@ -138,6 +167,8 @@ print heroes
 # найти код, который выполняет данной преобразование. Добавьте полученные признаки к числовым, которые вы
 # использовали во втором пункте данного этапа.
 def has_r_hero(df, hero_id):
+    """Возвращает столбец bool-значений датафрейма, описывающих принадлежность команде radiant"""
+
     return (df['r1_hero'] == hero_id) \
         | (df['r2_hero'] == hero_id) \
         | (df['r3_hero'] == hero_id) \
@@ -146,6 +177,8 @@ def has_r_hero(df, hero_id):
 
 
 def has_d_hero(df, hero_id):
+    """Возвращает столбец bool-значений датафрейма, описывающих принадлежность команде dire"""
+
     return (df['d1_hero'] == hero_id) \
         | (df['d2_hero'] == hero_id) \
         | (df['d3_hero'] == hero_id) \
@@ -153,50 +186,42 @@ def has_d_hero(df, hero_id):
         | (df['d5_hero'] == hero_id)
 
 
-print "DF shape before:", train_df_log.shape
-for hero in heroes:
-    # one hero cannot be in both teams
-    train_df_log['hero_' + str(hero)] = has_r_hero(train_df, hero).apply(lambda x: 1 if x else 0) + \
-                                        has_d_hero(train_df, hero).apply(lambda x: -1 if x else 0)
-print "DF shape after:", train_df_log.shape
+def add_heroes_columns(df_dest, df_source, heroes_all):
+    columns_count = df_dest.shape[1]
+    for hero in heroes_all:
+        # one hero cannot be in both teams
+        df_dest['hero_' + str(hero)] = has_r_hero(df_source, hero).apply(lambda x: 1 if x else 0) + \
+                                       has_d_hero(df_source, hero).apply(lambda x: -1 if x else 0)
+    print "Added new %s columns with hero heroes information" % (df_dest.shape[1] - columns_count)
+    print
+
+add_heroes_columns(train_df_log, train_df, heroes)
 
 # 5. Проведите кросс-валидацию для логистической регрессии на новой выборке с подбором лучшего параметра регуляризации.
-# exec_logistic_regression()
+exec_logistic_regression(subtitle='WITH HEROES INFORMATION')
 
 
 # 6. Постройте предсказания вероятностей победы команды Radiant для тестовой выборки с помощью лучшей из
 # изученных моделей (лучшей с точки зрения AUC-ROC на кросс-валидации). Убедитесь, что предсказанные вероятности
 # адекватные — находятся на отрезке [0, 1], не совпадают между собой (т.е. что модель не получилась константной).
 def run_best():
-    # train classifier
+    print '*' * 80
+    print ' ' * 20, 'RUN BEST SOLUTION'
+    print '*' * 80
+
+    # train classifier again,this time with optimal hyper-parameter
     X_log = train_df_log.as_matrix()
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X=X_log)
-    cf = LogisticRegression(penalty='l2', C=0.003)
-    cf.fit(X_scaled, y)
+    X = scaler.fit_transform(X=X_log)
+    cf = LogisticRegression(penalty='l2', C=0.005)
+    cf.fit(X, y)
 
-
-
+    # predict probabilities for test data
     test_df = pd.read_csv(working_path + "features_test.csv", index_col='match_id')
+    del test_df['start_time']
     test_df = test_df.fillna(0)
-    print "DF shape before:", test_df.shape
-    for hero in heroes:
-        # one hero cannot be in both teams
-        test_df['hero_' + str(hero)] = has_r_hero(test_df, hero).apply(lambda x: 1 if x else 0) + \
-                                            has_d_hero(test_df, hero).apply(lambda x: -1 if x else 0)
-    print "DF shape after:", test_df.shape
-
-    del test_df['lobby_type']
-    del test_df['r1_hero']
-    del test_df['r2_hero']
-    del test_df['r3_hero']
-    del test_df['r4_hero']
-    del test_df['r5_hero']
-    del test_df['d1_hero']
-    del test_df['d2_hero']
-    del test_df['d3_hero']
-    del test_df['d4_hero']
-    del test_df['d5_hero']
+    add_heroes_columns(test_df, test_df, get_heroes(test_df))
+    remove_categorial_features(test_df)
 
     X_test = test_df.as_matrix()
     X_test = scaler.transform(X_test)
