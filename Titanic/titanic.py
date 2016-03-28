@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.cross_validation import KFold
 from sklearn.cross_validation import cross_val_score
 from sklearn.grid_search import GridSearchCV
@@ -8,9 +10,13 @@ from sklearn.grid_search import GridSearchCV
 working_dir = r'C:\Users\Andrew\Source\Repos\CollIntel\Titanic'
 
 
-def write_data(index, prediced):
+def write_data(index, prediced, show_diff=True):
     df = pd.DataFrame({'Survived': prediced}, index=index)
     df.to_csv(working_dir + r'\out\test_predicted.csv')
+    if show_diff:
+        df_eth = pd.read_csv(working_dir + r'\out\test_predicted.csv', index_col='PassengerId')
+        df_pred = pd.read_csv(working_dir + r'\out\test_ethalon.csv', index_col='PassengerId')
+        print_diff(df_pred, df_eth)
 
 
 def read_data():
@@ -73,11 +79,28 @@ def build_features(df):
         else:
             return 0
 
-    del df['Embarked']
+    def get_city_code(city):
+        if city == 'Q':
+            return 1
+        elif city == 'S':
+            return 2
+        elif city == 'C':
+            return 3
+        return 2
+
+    def get_cabin_count(cabin):
+        if isinstance(cabin, basestring):
+            return len(cabin.split(' '))
+        return 0
+
     del df['Ticket']
     del df['Cabin']
+    del df['Age']
+    del df['Embarked']
+    # df.ix[:, 'Embarked'] = df.ix[:, 'Embarked'].map(get_city_code)
+    # df.ix[:, 'Cabin'] = df.ix[:, 'Cabin'].map(get_cabin_count)
     df.ix[:, 'Sex'] = df.ix[:, 'Sex'].map(lambda x: 1 if x == 'male' else 0)
-    df.ix[:, 'Title'] = df.ix[:, 'Name'].map(lambda x: get_title(x))
+    df.ix[:, 'Title'] = df.ix[:, 'Name'].map(get_title)
 
     names = {}
     for name in df['Name'].values:
@@ -87,15 +110,29 @@ def build_features(df):
         names.setdefault(surname, 0)
         names[surname] += 1
 
-    df.ix[:, 'Cofam'] = df.ix[:, 'Name'].map(lambda x: get_family_number(x, names))
+    # df.ix[:, 'Cofam'] = df.ix[:, 'Name'].map(lambda x: get_family_number(x, names))
     del df['Name']
-    df['ParchSibSp'] = df['SibSp'] + df['Parch']
-    df['ParchSibSpCofam'] = df['SibSp'] + df['Parch'] + df['Cofam']
+    # df['ParchSibSp'] = df['SibSp'] + df['Parch']
+    # df['ParchSibSpCofam'] = df['SibSp'] + df['Parch'] + df['Cofam']
 
 
-def fill_missing_values(df):
+def fill_missing_values(df, df_all):
     df['Fare'].fillna(df['Fare'].mean(), inplace=True)
-    df['Age'].fillna(30, inplace=True)
+    # df['Embarked'].fillna(df['Embarked'].median(), inplace=True)
+
+    # fill age with some constant
+    # df['Age'].fillna(30, inplace=True)
+
+    # fill age calculated values
+    # age_train = df_all.loc[df_all['Age'].notnull()].copy()
+    # age_train['Fare'].fillna(age_train['Fare'].mean(), inplace=True)
+    # age_test = df_all.loc[df_all['Age'].isnull()].copy()
+    # age_test['Fare'].fillna(age_test['Fare'].mean(), inplace=True)
+    # reg = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.1)
+    # reg.fit(age_train.iloc[:, 1:].as_matrix(), age_train.iloc[:, 0].as_matrix())
+    # age_test.iloc[:, 0] = reg.predict(age_test.iloc[:, 1:].as_matrix())
+    # dataset = pd.concat([age_train, age_test])
+    # df.update(dataset['Age'])
 
 
 def define_features_importance(X, y, features):
@@ -111,43 +148,59 @@ def define_features_importance(X, y, features):
 
 def get_X_y(df):
     dfc = df.copy()
-    if 'Survived' in dfc:
+    if 'Survived' in dfc.columns:
         del dfc['Survived']
     X = dfc.as_matrix()
     y = None
-    if 'Survived' in dfc:
+    if 'Survived' in df.columns:
         y = df['Survived'].values
     return X, y, dfc.columns
 
 
+def print_diff(df1, df2):
+    diff = df1.loc[df1['Survived'] != df2['Survived'], :]
+    if diff.shape[0] > 0:
+        print "This rows have diff (original predicted values shown):"
+        print diff
+    else:
+        print "*** No difference found"
+
 df_train, df_test, df_all = read_data()
 build_features(df_train)
-fill_missing_values(df_train)
+build_features(df_test)
+build_features(df_all)
+fill_missing_values(df_train, df_all)
+fill_missing_values(df_test, df_all)
 
 X, y, columns = get_X_y(df_train)
-define_features_importance(X, y, columns.values)
+# define_features_importance(X, y, columns.values)
 
+# run grid search for optimal parameters
+# clf = GradientBoostingClassifier(random_state=1)
+# parameters = {'n_estimators': range(50, 500, 30), 'max_depth': [2, 3, 4, 5]}
+# gs = GridSearchCV(clf, param_grid=parameters, scoring='accuracy')
+# gs.fit(X, y)
+# scores = []
+# scores.extend(gs.grid_scores_)
+# scores.sort(key=lambda x: x[1], reverse=True)
+# for p, mean_score, cv_score in scores:
+#     print mean_score, p
+
+
+# create classifier with optimal parameters
 clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth=2, random_state=1)
-kfold = KFold(n=X.shape[0], n_folds=5, random_state=241, shuffle=True)
-scores = cross_val_score(clf, X, y, cv=kfold, scoring='accuracy')
-print "Scores:"
-print "mean=", scores.mean()
-print "min=", scores.min()
-print "max=", scores.max()
 
+# run classifier cross_validation
+# kfold = KFold(n=X.shape[0], n_folds=5, random_state=241, shuffle=True)
+# scores = cross_val_score(clf, X, y, cv=kfold, scoring='accuracy')
+# print "Scores:"
+# print "mean=", scores.mean()
+# print "min=", scores.min()
+# print "max=", scores.max()
 
-clf = GradientBoostingClassifier(random_state=158)
-parameters = {'n_estimators': range(50, 500, 30), 'max_depth': [2, 3, 4, 5]}
-gs = GridSearchCV(clf, param_grid=parameters, scoring='accuracy')
-gs.fit(X, y)
-for p, mean_score, cv_score in gs.grid_scores_:
-    print mean_score, p
-
-
-build_features(df_test)
-fill_missing_values(df_test)
-clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth=2, random_state=1)
+# run on test data
 clf.fit(X, y)
-X_test, y_test = get_X_y(df_test)
+X_test, y_test, columns = get_X_y(df_test)
 predicted = clf.predict(X_test)
 write_data(df_test.index, predicted)
+
