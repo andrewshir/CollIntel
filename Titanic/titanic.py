@@ -95,7 +95,7 @@ def build_features(df):
 
     del df['Ticket']
     del df['Cabin']
-    del df['Age']
+    # del df['Age']
     del df['Embarked']
     # df.ix[:, 'Embarked'] = df.ix[:, 'Embarked'].map(get_city_code)
     # df.ix[:, 'Cabin'] = df.ix[:, 'Cabin'].map(get_cabin_count)
@@ -121,7 +121,7 @@ def fill_missing_values(df, df_all):
     # df['Embarked'].fillna(df['Embarked'].median(), inplace=True)
 
     # fill age with some constant
-    # df['Age'].fillna(30, inplace=True)
+    df['Age'].fillna(30, inplace=True)
 
     # fill age calculated values
     # age_train = df_all.loc[df_all['Age'].notnull()].copy()
@@ -165,6 +165,34 @@ def print_diff(df1, df2):
     else:
         print "*** No difference found"
 
+
+def build_error_table(df, row, col):
+    row_values = df[row].unique()
+    row_values.sort()
+    col_values = df[col].unique()
+    col_values.sort()
+
+    print '|%10s|' % col,
+    for cv in col_values:
+        print '%5s|' % cv,
+    print
+
+    print '|%10s|' % row,
+    for cv in col_values:
+        print '-----|' % cv,
+    print
+
+    for rv in row_values:
+        print '|%10s|' % rv,
+        for cv in col_values:
+            df_filt = df.loc[df[row] == rv, :].loc[df[col] == cv, :]
+            errors_count = df_filt[df_filt['Survived'] == df_filt['SurvivedPred']].shape[0]
+            total_count = df_filt.shape[0]
+            error_rate = 0 if total_count == 0 else float(errors_count) / total_count
+            print ' %0.2f|' % error_rate,
+        print
+
+
 df_train, df_test, df_all = read_data()
 build_features(df_train)
 build_features(df_test)
@@ -190,6 +218,14 @@ X, y, columns = get_X_y(df_train)
 # create classifier with optimal parameters
 clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth=2, random_state=1)
 
+# build error table on trained dataset
+# clf.fit(X, y)
+# predicted = clf.predict(X)
+# dft = df_train.copy()
+# dft['SurvivedPred'] = predicted
+# build_error_table(dft, row='Sex', col='Pclass')
+
+
 # run classifier cross_validation
 # kfold = KFold(n=X.shape[0], n_folds=5, random_state=241, shuffle=True)
 # scores = cross_val_score(clf, X, y, cv=kfold, scoring='accuracy')
@@ -199,8 +235,8 @@ clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth
 # print "max=", scores.max()
 
 # run on test data
-clf.fit(X, y)
-X_test, y_test, columns = get_X_y(df_test)
-predicted = clf.predict(X_test)
-write_data(df_test.index, predicted)
+# clf.fit(X, y)
+# X_test, y_test, columns = get_X_y(df_test)
+# predicted = clf.predict(X_test)
+# write_data(df_test.index, predicted)
 
