@@ -10,8 +10,9 @@ from sklearn.grid_search import GridSearchCV
 working_dir = r'C:\Users\Andrew\Source\Repos\CollIntel\Titanic'
 
 
-def write_data(index, prediced, show_diff=True):
-    df = pd.DataFrame({'Survived': prediced}, index=index)
+def write_data(index, predicted, show_diff=True):
+    predicted = [int(x) for x in predicted]
+    df = pd.DataFrame({'Survived': predicted}, index=index)
     df.to_csv(working_dir + r'\out\test_predicted.csv')
     if show_diff:
         df_test = pd.read_csv(working_dir + r'\test.csv', index_col='PassengerId')
@@ -196,6 +197,44 @@ def build_error_table(df, row, col):
         print
 
 
+def manual_decision_tree(X):
+    cn_pclass = 0
+    cn_sex = 1
+    cn_age = 2
+    cn_sibsp = 3
+    cn_parch = 4
+    cn_fare = 5
+    cn_title = 6
+
+    y = []
+    for row in X:
+        if row[cn_sex] == 0:
+            if row[cn_pclass] < 3:
+                y.append(1)
+            else:
+                if row[cn_age] < 6:
+                    y.append(1)
+                else:
+                    if row[cn_fare] < 9:
+                        y.append(1)
+                    else:
+                        if 24 <= row[cn_age] <= 36 and 11 <= row[cn_fare] <= 21:
+                            y.append(1)
+                        else:
+                            y.append(0)
+        else:
+            if row[cn_pclass] > 1:
+                y.append(0)
+            else:
+                if row[cn_fare] > 300:
+                    y.append(1)
+                else:
+                    if row[cn_age] < 17:
+                        y.append(1)
+                    else:
+                        y.append(0)
+    return y
+
 df_train, df_test, df_all = read_data()
 build_features(df_train)
 build_features(df_test)
@@ -228,6 +267,11 @@ clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth
 # dft['SurvivedPred'] = predicted
 # build_error_table(dft, row='Sex', col='Pclass')
 
+# build error table for manual decision tree
+# predicted = manual_decision_tree(X)
+# dft = df_train.copy()
+# dft['SurvivedPred'] = predicted
+# build_error_table(dft, row='Sex', col='Pclass')
 
 # run classifier cross_validation
 # kfold = KFold(n=X.shape[0], n_folds=5, random_state=241, shuffle=True)
@@ -241,5 +285,10 @@ clf = GradientBoostingClassifier(learning_rate=0.01, n_estimators=260, max_depth
 # clf.fit(X, y)
 # X_test, y_test, columns = get_X_y(df_test)
 # predicted = clf.predict(X_test)
+# write_data(df_test.index, predicted)
+
+# run data manual tree on test data
+# X_test, y_test, columns = get_X_y(df_test)
+# predicted = manual_decision_tree(X_test)
 # write_data(df_test.index, predicted)
 
