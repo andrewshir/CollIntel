@@ -14,8 +14,11 @@ def write_data(index, prediced, show_diff=True):
     df = pd.DataFrame({'Survived': prediced}, index=index)
     df.to_csv(working_dir + r'\out\test_predicted.csv')
     if show_diff:
+        df_test = pd.read_csv(working_dir + r'\test.csv', index_col='PassengerId')
         df_eth = pd.read_csv(working_dir + r'\out\test_predicted.csv', index_col='PassengerId')
         df_pred = pd.read_csv(working_dir + r'\out\test_ethalon.csv', index_col='PassengerId')
+        df_test['Survived'] = df_pred['Survived']
+        df_pred = df_test
         print_diff(df_pred, df_eth)
 
 
