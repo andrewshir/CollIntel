@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-import time
+import datetime
+import random
 
 
 def load_df():
@@ -62,7 +63,10 @@ def transform_df(df):
 
     # parse date
     df['ADMIT_DATE'] = df['ADMIT_DATE'].map(lambda str_date:
-                                            time.strptime(str_date, "%Y-%m-%d"))
+                                            datetime.datetime.strptime(str_date, "%Y-%m-%d"))
+
+    # cut 2010 and earlier data, because of data incompleteness
+    df = df.loc[df['ADMIT_DATE'] >= datetime.date(2011, 1, 1), :]
 
     # use sqrt function to make accent on age difference for small ages
     df['AGE'] = df['AgeInYears'].map(lambda a: np.sqrt(float(a) / 12))
@@ -93,6 +97,48 @@ def norm_values(df, col_date_name='ADMIT_DATE'):
     return norms
 
 
+def denorm_values(df, norms):
+    """Denormalizes values to original format"""
+    pass
+
+
 data = load_df()
 data = transform_df(data)
 norms = norm_values(data)
+
+length_in_days = 30
+min_date = data['ADMIT_DATE'].min()
+max_date = data['ADMIT_DATE'].max() - datetime.timedelta(days=length_in_days)
+total_delta = max_date - min_date
+
+# define distribution of patient number
+
+# we will take periods with some overlapping
+periods_count = int(round(total_delta.days / length_in_days * 1.2))
+patient_numbers = []
+patient_numbers_ext = []
+
+dates = [pd.to_datetime(d) for d in data['ADMIT_DATE'].values]
+for i in xrange(periods_count):
+    period_start = min_date + datetime.timedelta(days=random.randint(0, total_delta.days))
+    period_end = period_start + datetime.timedelta(days=length_in_days)
+    count = 0
+    for d in dates:
+        if period_start <= d <= period_end:
+            count += 1
+    patient_numbers.append(count)
+    patient_numbers_ext.append((count, period_start))
+
+print
+print "patient numbers:"
+patient_numbers_ext.sort(key=lambda x: x[0])
+for p in patient_numbers_ext:
+    print p[0], p[1]
+
+
+
+
+
+
+
+
