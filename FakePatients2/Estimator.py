@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import datetime
 import random
+from sklearn.neighbors import KernelDensity
+import matplotlib.pyplot as plt
 
 
 def load_df():
@@ -102,38 +104,42 @@ def denorm_values(df, norms):
     pass
 
 
+def get_patient_numbers(df, length_in_days=30):
+    min_date = df['ADMIT_DATE'].min()
+    max_date = df['ADMIT_DATE'].max() - datetime.timedelta(days=length_in_days)
+    total_delta = max_date - min_date
+
+    # we will take periods with some overlapping
+    periods_count = int(round(total_delta.days / length_in_days * 1.2))
+    patient_numbers = []
+    dates = [pd.to_datetime(d) for d in df['ADMIT_DATE'].values]
+    for i in xrange(periods_count):
+        period_start = min_date + datetime.timedelta(days=random.randint(0, total_delta.days))
+        period_end = period_start + datetime.timedelta(days=length_in_days)
+        count = 0
+        for d in dates:
+            if period_start <= d <= period_end:
+                count += 1
+        patient_numbers.append(count)
+    return patient_numbers
+
+
+def train_patient_number(pat_numbers, length_in_days=30):
+    """define distribution of patient number"""
+    X = [[x] for x in patient_numbers]
+    estimator = KernelDensity(kernel='gaussian')
+    estimator.fit(X)
+    return estimator
+
+
 data = load_df()
 data = transform_df(data)
 norms = norm_values(data)
 
-length_in_days = 30
-min_date = data['ADMIT_DATE'].min()
-max_date = data['ADMIT_DATE'].max() - datetime.timedelta(days=length_in_days)
-total_delta = max_date - min_date
-
-# define distribution of patient number
-
-# we will take periods with some overlapping
-periods_count = int(round(total_delta.days / length_in_days * 1.2))
-patient_numbers = []
-patient_numbers_ext = []
-
-dates = [pd.to_datetime(d) for d in data['ADMIT_DATE'].values]
-for i in xrange(periods_count):
-    period_start = min_date + datetime.timedelta(days=random.randint(0, total_delta.days))
-    period_end = period_start + datetime.timedelta(days=length_in_days)
-    count = 0
-    for d in dates:
-        if period_start <= d <= period_end:
-            count += 1
-    patient_numbers.append(count)
-    patient_numbers_ext.append((count, period_start))
-
-print
-print "patient numbers:"
-patient_numbers_ext.sort(key=lambda x: x[0])
-for p in patient_numbers_ext:
-    print p[0], p[1]
+# patient number for custom period
+patient_numbers = get_patient_numbers(data)
+patient_number_estimator = train_patient_number(patient_numbers)
+patient_numbers_gen = patient_number_estimator.sample(n_samples=len(patient_numbers)).flatten()
 
 
 
