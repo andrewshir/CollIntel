@@ -103,7 +103,7 @@ def get_patient_numbers(df, length_in_days=30):
 
     # we will take periods with some overlapping
     periods_count = int(round(total_delta.days / length_in_days * 1.2))
-    patient_numbers = []
+    result = []
     dates = [pd.to_datetime(d) for d in df['ADMIT_DATE'].values]
     for i in xrange(periods_count):
         period_start = min_date + datetime.timedelta(days=random.randint(0, total_delta.days))
@@ -112,8 +112,24 @@ def get_patient_numbers(df, length_in_days=30):
         for d in dates:
             if period_start <= d <= period_end:
                 count += 1
-        patient_numbers.append(count)
-    return patient_numbers
+        result.append(count)
+    return result
+
+
+def get_period_samples(df, num_samples=None, length_in_days=30):
+    min_date = df['ADMIT_DATE'].min()
+    max_date = df['ADMIT_DATE'].max() - datetime.timedelta(days=length_in_days)
+    total_delta = max_date - min_date
+
+    if num_samples is None:
+        num_samples = int(round(total_delta.days / length_in_days))
+    result = []
+    for i in xrange(num_samples):
+        period_start = min_date + datetime.timedelta(days=random.randint(0, total_delta.days))
+        period_end = period_start + datetime.timedelta(days=length_in_days)
+        result.append(df.loc[df['ADMIT_DATE'] >= period_start].loc[df['ADMIT_DATE'] <= period_end].values)
+
+    return result
 
 
 def train_patient_number_estimator(pat_numbers, bandwidth=1.0):
@@ -149,15 +165,29 @@ def discretize_estimated_sample(sample):
 
 data = load_df()
 data = transform_df(data)
-# norms = norm_values(data)
+
+period_samples = get_period_samples(data, num_samples=3)
+for period in period_samples:
+    print period
 
 # patient number for custom period
 patient_numbers = get_patient_numbers(data)
 patient_number_estimator = train_patient_number_estimator(patient_numbers)
-patient_numbers_gen = [int(round(x)) for x in
-                       patient_number_estimator.sample(n_samples=len(patient_numbers)).flatten()]
-print patient_numbers
-print patient_numbers_gen
+for i in xrange(3):
+    patient_numbers = get_patient_numbers(data)
+    patient_numbers_gen = [int(round(x)) for x in
+                           patient_number_estimator.sample(n_samples=len(patient_numbers)).flatten()]
+
+    patient_number_hist_mean = int(np.round(np.mean(patient_numbers)))
+    patient_number_hist_std = int(np.round(np.std(patient_numbers)))
+    patient_number_gen_mean = int(np.round(np.mean(patient_numbers_gen)))
+    patient_number_gen_std = int(np.round(np.std(patient_numbers_gen)))
+
+    print "Iteration %s" % i
+    print "Historic    Mean=%d Std=%d" % (patient_number_hist_mean, patient_number_hist_std)
+    print "Generated   Mean=%d Std=%d" % (patient_number_gen_mean, patient_number_gen_std)
+
+
 
 # patient flow estimation
 patient_flow_estimator = train_patient_flow_estimator(data)
